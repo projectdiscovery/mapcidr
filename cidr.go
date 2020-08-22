@@ -86,7 +86,7 @@ func SplitIPNetIntoN(iprange *net.IPNet, n int) ([]*net.IPNet, error) {
 	// invalid value
 	if n <= 1 || AddressCountIpnet(iprange) < uint64(n) {
 		subnets = append(subnets, iprange)
-		return nil, errors.New("invalid value provided for n")
+		return subnets, nil
 	}
 	// power of two
 	if isPowerOfTwo(n) || isPowerOfTwoPlusOne(n) {
