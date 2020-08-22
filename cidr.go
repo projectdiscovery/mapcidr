@@ -3,7 +3,6 @@ package mapcidr
 
 import (
 	"encoding/binary"
-	"errors"
 	"fmt"
 	"math"
 	"math/big"
