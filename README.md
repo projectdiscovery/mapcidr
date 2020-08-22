@@ -142,29 +142,30 @@ It's possible to use the library directly in your go programs. The following cod
 package main
 
 import (
-  "fmt"
+	"fmt"
+
 	"github.com/projectdiscovery/mapcidr"
 )
 
-funf main() {
-  // Divide the CIDR into two subnets
-  subnets1 := mapcidr.SplitN("192.168.1.0/24", 2)
-  for _, subnet := range subnets1 {
+func main() {
+	// Divide the CIDR into two subnets
+	subnets1 := mapcidr.SplitN("192.168.1.0/24", 2)
+	for _, subnet := range subnets1 {
 		fmt.Println(subnet)
-  }
-  // Divide the CIDR into two subnets containing 128 hosts each
-  subnets2 := mapcidr.SplitByNumber("192.168.1.0/24", 128)
-  for _, subnet := range subnets2 {
+	}
+	// Divide the CIDR into two subnets containing 128 hosts each
+	subnets2 := mapcidr.SplitByNumber("192.168.1.0/24", 128)
+	for _, subnet := range subnets2 {
 		fmt.Println(subnet)
-  }
+	}
 
-
-  // List all ips in the CIDR
-  ips, _ := mapcidr.Ips("192.168.1.0/24")
-  for _, ip := range ips {
-    fmt.Println(ip)
-  }
+	// List all ips in the CIDR
+	ips, _ := mapcidr.Ips("192.168.1.0/24")
+	for _, ip := range ips {
+		fmt.Println(ip)
+	}
 }
+
 ```
 
 

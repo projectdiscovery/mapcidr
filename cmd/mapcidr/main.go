@@ -148,17 +148,23 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 			gologger.Fatalf("%s\n", err)
 		}
 		if options.Slices > 0 {
-			subnets := mapcidr.SplitN(cidr, options.Slices)
+			subnets, err := mapcidr.SplitN(cidr, options.Slices)
+			if err != nil {
+				gologger.Fatalf("%s\n", err)
+			}
 			for _, subnet := range subnets {
 				outputchan <- subnet.String()
 			}
 		} else if options.HostCount > 0 {
-			subnets := mapcidr.SplitByNumber(cidr, options.HostCount)
+			subnets, err := mapcidr.SplitByNumber(cidr, options.HostCount)
+			if err != nil {
+				gologger.Fatalf("%s\n", err)
+			}
 			for _, subnet := range subnets {
 				outputchan <- subnet.String()
 			}
 		} else {
-			ips, err := mapcidr.Ips(cidr)
+			ips, err := mapcidr.IPAddresses(cidr)
 			if err != nil {
 				gologger.Fatalf("%s\n", err)
 			}

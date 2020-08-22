@@ -1,105 +1,96 @@
+// Package mapcidr implements methods to allow working with CIDRs.
 package mapcidr
 
 import (
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"math"
 	"math/big"
 	"net"
-	"reflect"
 )
 
-// Note: parts of the code comes from various sources including github, stackoverflow
-
 // AddressRange returns the first and last addresses in the given CIDR range.
-func AddressRange(network *net.IPNet) (net.IP, net.IP) {
+func AddressRange(network *net.IPNet) (net.IP, net.IP, error) {
 	firstIP := network.IP
 
 	prefixLen, bits := network.Mask.Size()
 	if prefixLen == bits {
 		lastIP := make([]byte, len(firstIP))
 		copy(lastIP, firstIP)
-		return firstIP, lastIP
+		return firstIP, lastIP, nil
 	}
 
-	firstIPInt, bits, _ := ipToInt(firstIP)
+	firstIPInt, bits, err := IPToInteger(firstIP)
+	if err != nil {
+		return nil, nil, err
+	}
 	hostLen := uint(bits) - uint(prefixLen)
 	lastIPInt := big.NewInt(1)
 	lastIPInt.Lsh(lastIPInt, hostLen)
 	lastIPInt.Sub(lastIPInt, big.NewInt(1))
 	lastIPInt.Or(lastIPInt, firstIPInt)
 
-	return firstIP, intToIP(lastIPInt, bits)
+	return firstIP, IntegerToIP(lastIPInt, bits), nil
 }
 
-// AddressCount ips in a CIDR range
-func AddressCount(cidr string) uint64 {
-	_, ipnet, _ := net.ParseCIDR(cidr)
-	return AddressCountIpnet(ipnet)
+// AddressCount returns the number of IP addresses in a range
+func AddressCount(cidr string) (uint64, error) {
+	_, ipnet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return 0, err
+	}
+	return AddressCountIpnet(ipnet), nil
 }
 
-// AddressCountIpnet ips in a ipnet
+// AddressCountIpnet returns the number of IP addresses in an IPNet structure
 func AddressCountIpnet(network *net.IPNet) uint64 {
 	prefixLen, bits := network.Mask.Size()
 	return 1 << (uint64(bits) - uint64(prefixLen))
 }
 
-func inc(IP net.IP) net.IP {
-	incIP := make([]byte, len(IP))
-	copy(incIP, IP)
-	for j := len(incIP) - 1; j >= 0; j-- {
-		incIP[j]++
-		if incIP[j] > 0 {
-			break
-		}
+// SplitByNumber splits the given cidr into subnets with the closest
+// number of hosts per subnet.
+func SplitByNumber(iprange string, number int) ([]*net.IPNet, error) {
+	_, ipnet, err := net.ParseCIDR(iprange)
+	if err != nil {
+		return nil, err
 	}
-	return incIP
+	return SplitIPNetByNumber(ipnet, number)
 }
 
-func dec(IP net.IP) net.IP {
-	decIP := make([]byte, len(IP))
-	copy(decIP, IP)
-	for j := len(decIP) - 1; j >= 0; j-- {
-		decIP[j]--
-		if decIP[j] < 255 {
-			break
-		}
-	}
-	return decIP
-}
-
-// SplitByNumber splits the given cidr into subnets with the closest number of hosts per subnet
-func SplitByNumber(iprange string, number int) []*net.IPNet {
-	_, ipnet, _ := net.ParseCIDR(iprange)
-	return SplitByNumberIpnet(ipnet, number)
-}
-
-// SplitByNumberIpnet splits ipnet into subnets with the closest number of hosts per subnet
-func SplitByNumberIpnet(ipnet *net.IPNet, number int) []*net.IPNet {
+// SplitIPNetByNumber splits an IPNet into subnets with the closest n
+// umber of hosts per subnet.
+func SplitIPNetByNumber(ipnet *net.IPNet, number int) ([]*net.IPNet, error) {
 	ipsNumber := AddressCountIpnet(ipnet)
+
 	// truncate result to nearest uint64
 	optimalSplit := int(ipsNumber / uint64(number))
-	return SplitNIpnet(ipnet, optimalSplit)
+	return SplitIPNetIntoN(ipnet, optimalSplit)
 }
 
 // SplitN attempts to split a cidr in the exact number of subnets
-func SplitN(iprange string, n int) (subnets []*net.IPNet) {
-	_, ipnet, _ := net.ParseCIDR(iprange)
-	return SplitNIpnet(ipnet, n)
+func SplitN(iprange string, n int) ([]*net.IPNet, error) {
+	_, ipnet, err := net.ParseCIDR(iprange)
+	if err != nil {
+		return nil, err
+	}
+	return SplitIPNetIntoN(ipnet, n)
 }
 
-// SplitNIpnet attempts to split a ipnet in the exact number of subnets
-func SplitNIpnet(iprange *net.IPNet, n int) (subnets []*net.IPNet) {
-	// Note: the code and logic aren't really optimized, it just works - any improvement is welcome
+// SplitIPNetIntoN attempts to split a ipnet in the exact number of subnets
+func SplitIPNetIntoN(iprange *net.IPNet, n int) ([]*net.IPNet, error) {
+	var err error
+	subnets := make([]*net.IPNet, 0, n)
 
 	// invalid value
 	if n <= 1 || AddressCountIpnet(iprange) < uint64(n) {
 		subnets = append(subnets, iprange)
-		return
+		return nil, errors.New("invalid value provided for n")
 	}
 	// power of two
 	if isPowerOfTwo(n) || isPowerOfTwoPlusOne(n) {
-		return splitIpnet(iprange, n)
+		return splitIPNet(iprange, n)
 	}
 
 	var closestMinorPowerOfTwo int
@@ -111,93 +102,100 @@ func SplitNIpnet(iprange *net.IPNet, n int) (subnets []*net.IPNet) {
 		}
 	}
 
-	subnets = splitIpnet(iprange, closestMinorPowerOfTwo)
+	subnets, err = splitIPNet(iprange, closestMinorPowerOfTwo)
+	if err != nil {
+		return nil, err
+	}
 	for len(subnets) < n {
 		var newSubnets []*net.IPNet
 		level := 1
 		for i := len(subnets) - 1; i >= 0; i-- {
-			newSubnets = append(newSubnets, divideIpNet(subnets[i])...)
+			divided, err := divideIPNet(subnets[i])
+			if err != nil {
+				return nil, err
+			}
+			newSubnets = append(newSubnets, divided...)
 			if len(subnets)-level+len(newSubnets) == n {
-				reverseAny(newSubnets)
+				reverseIPNet(newSubnets)
 				subnets = subnets[:len(subnets)-level]
 				subnets = append(subnets, newSubnets...)
-				return
+				return subnets, nil
 			}
 			level++
 		}
-		reverseAny(newSubnets)
+		reverseIPNet(newSubnets)
 		subnets = newSubnets
 	}
-	return
+	return subnets, nil
 }
 
-func divide(iprange string) (subnets []*net.IPNet) {
+// divide divides an IPNet into two IPNet structures
+func divide(iprange string) ([]*net.IPNet, error) {
 	_, ipnet, _ := net.ParseCIDR(iprange)
-	return divideIpNet(ipnet)
+	return divideIPNet(ipnet)
 }
 
-func divideIpNet(ipnet *net.IPNet) (subnets []*net.IPNet) {
+// divideIPNet divides an IPNet into two IPNet structures.
+func divideIPNet(ipnet *net.IPNet) ([]*net.IPNet, error) {
+	subnets := make([]*net.IPNet, 0, 2)
+
 	maskBits, _ := ipnet.Mask.Size()
 	wantedMaskBits := maskBits + 1
 
-	currentSubnet := currentSubnet(ipnet, wantedMaskBits)
+	currentSubnet, err := currentSubnet(ipnet, wantedMaskBits)
+	if err != nil {
+		return nil, err
+	}
 	subnets = append(subnets, currentSubnet)
-	nextSubnet, _ := nextSubnet(currentSubnet, wantedMaskBits)
+	nextSubnet, _, err := nextSubnet(currentSubnet, wantedMaskBits)
+	if err != nil {
+		return nil, err
+	}
 	subnets = append(subnets, nextSubnet)
 
-	return subnets
+	return subnets, nil
 }
 
-func splitIpnet(ipnet *net.IPNet, n int) (subnets []*net.IPNet) {
+// splitIPNet into approximate N counts
+func splitIPNet(ipnet *net.IPNet, n int) ([]*net.IPNet, error) {
+	var err error
+	subnets := make([]*net.IPNet, 0, n)
+
 	maskBits, _ := ipnet.Mask.Size()
-
 	closestPow2 := int(closestPowerOfTwo(uint32(n)))
-
 	pow2 := int(math.Log2(float64(closestPow2)))
 
 	wantedMaskBits := maskBits + pow2
 
-	currentSubnet := currentSubnet(ipnet, wantedMaskBits)
+	currentSubnet, err := currentSubnet(ipnet, wantedMaskBits)
+	if err != nil {
+		return nil, err
+	}
 	subnets = append(subnets, currentSubnet)
 	nxtSubnet := currentSubnet
 	for i := 0; i < closestPow2-1; i++ {
-		nxtSubnet, _ = nextSubnet(nxtSubnet, wantedMaskBits)
+		nxtSubnet, _, err = nextSubnet(nxtSubnet, wantedMaskBits)
+		if err != nil {
+			return nil, err
+		}
 		subnets = append(subnets, nxtSubnet)
 	}
 
 	if len(subnets) < n {
 		lastSubnet := subnets[len(subnets)-1]
 		subnets = subnets[:len(subnets)-1]
-		subnets = append(subnets, divideIpNet(lastSubnet)...)
+		ipnets, err := divideIPNet(lastSubnet)
+		if err != nil {
+			return nil, err
+		}
+		subnets = append(subnets, ipnets...)
 	}
-
-	return subnets
+	return subnets, nil
 }
 
-func split(iprange string, n int) (subnets []*net.IPNet) {
+func split(iprange string, n int) ([]*net.IPNet, error) {
 	_, ipnet, _ := net.ParseCIDR(iprange)
-	return splitIpnet(ipnet, n)
-}
-
-func ipToInt(ip net.IP) (*big.Int, int, error) {
-	val := &big.Int{}
-	val.SetBytes([]byte(ip))
-	if len(ip) == net.IPv4len {
-		return val, 32, nil
-	} else if len(ip) == net.IPv6len {
-		return val, 128, nil
-	} else {
-		return nil, 0, fmt.Errorf("Unsupported address length %d", len(ip))
-	}
-}
-
-func intToIP(ipInt *big.Int, bits int) net.IP {
-	ipBytes := ipInt.Bytes()
-	ret := make([]byte, bits/8)
-	for i := 1; i <= len(ipBytes); i++ {
-		ret[len(ret)-i] = ipBytes[len(ipBytes)-i]
-	}
-	return net.IP(ret)
+	return splitIPNet(ipnet, n)
 }
 
 func nextPowerOfTwo(v uint32) uint32 {
@@ -219,10 +217,13 @@ func closestPowerOfTwo(v uint32) uint32 {
 	return next
 }
 
-func currentSubnet(network *net.IPNet, prefixLen int) *net.IPNet {
-	currentFirst, _ := AddressRange(network)
+func currentSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, error) {
+	currentFirst, _, err := AddressRange(network)
+	if err != nil {
+		return nil, err
+	}
 	mask := net.CIDRMask(prefixLen, 8*len(currentFirst))
-	return &net.IPNet{IP: currentFirst.Mask(mask), Mask: mask}
+	return &net.IPNet{IP: currentFirst.Mask(mask), Mask: mask}, nil
 }
 
 func previousSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, bool) {
@@ -238,48 +239,56 @@ func previousSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, bool) {
 	return previous, false
 }
 
-func nextSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, bool) {
-	_, currentLast := AddressRange(network)
+// nextSubnet returns the next subnet for an ipnet
+func nextSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, bool, error) {
+	_, currentLast, err := AddressRange(network)
+	if err != nil {
+		return nil, false, err
+	}
 	mask := net.CIDRMask(prefixLen, 8*len(currentLast))
 	currentSubnet := &net.IPNet{IP: currentLast.Mask(mask), Mask: mask}
-	_, last := AddressRange(currentSubnet)
+	_, last, err := AddressRange(currentSubnet)
+	if err != nil {
+		return nil, false, err
+	}
 	last = inc(last)
 	next := &net.IPNet{IP: last.Mask(mask), Mask: mask}
 	if last.Equal(net.IPv4zero) || last.Equal(net.IPv6zero) {
-		return next, true
+		return next, true, nil
 	}
-	return next, false
+	return next, false, nil
 }
 
 func isPowerOfTwoPlusOne(x int) bool {
 	return isPowerOfTwo(x - 1)
 }
 
+// isPowerOfTwo returns if a number is a power of 2
 func isPowerOfTwo(x int) bool {
 	return x != 0 && (x&(x-1)) == 0
 }
 
-func reverseAny(s interface{}) {
-	n := reflect.ValueOf(s).Len()
-	swap := reflect.Swapper(s)
-	for i, j := 0, n-1; i < j; i, j = i+1, j-1 {
-		swap(i, j)
+// reverseIPNet reverses an ipnet slice
+func reverseIPNet(ipnets []*net.IPNet) {
+	for i, j := 0, len(ipnets)-1; i < j; i, j = i+1, j-1 {
+		ipnets[i], ipnets[j] = ipnets[j], ipnets[i]
 	}
 }
 
-// Ips of a cidr
-func Ips(cidr string) ([]string, error) {
+// IPAddresses returns all the IP addresses in a CIDR
+func IPAddresses(cidr string) ([]string, error) {
 	_, ipnet, err := net.ParseCIDR(cidr)
 	if err != nil {
 		return []string{}, err
 	}
-	return ipsIpnet(ipnet), nil
+	return IPAddressesIPnet(ipnet), nil
 }
 
-func ipsIpnet(ipv4Net *net.IPNet) (ips []string) {
+// IPAddressesIPnet returns all IP addresses in an IPNet.
+func IPAddressesIPnet(ipnet *net.IPNet) (ips []string) {
 	// convert IPNet struct mask and address to uint32
-	mask := binary.BigEndian.Uint32(ipv4Net.Mask)
-	start := binary.BigEndian.Uint32(ipv4Net.IP)
+	mask := binary.BigEndian.Uint32(ipnet.Mask)
+	start := binary.BigEndian.Uint32(ipnet.IP)
 
 	// find the final address
 	finish := (start & mask) | (mask ^ 0xffffffff)
@@ -291,6 +300,30 @@ func ipsIpnet(ipv4Net *net.IPNet) (ips []string) {
 		binary.BigEndian.PutUint32(ip, i)
 		ips = append(ips, ip.String())
 	}
-
 	return ips
+}
+
+// IPToInteger converts an IP address to its integer representation.
+// It supports both IPv4 as well as IPv6 addresses.
+func IPToInteger(ip net.IP) (*big.Int, int, error) {
+	val := &big.Int{}
+	val.SetBytes([]byte(ip))
+
+	if len(ip) == net.IPv4len {
+		return val, 32, nil
+	} else if len(ip) == net.IPv6len {
+		return val, 128, nil
+	} else {
+		return nil, 0, fmt.Errorf("Unsupported address length %d", len(ip))
+	}
+}
+
+// IntegerToIP converts an Integer IP address to net.IP format.
+func IntegerToIP(ipInt *big.Int, bits int) net.IP {
+	ipBytes := ipInt.Bytes()
+	ret := make([]byte, bits/8)
+	for i := 1; i <= len(ipBytes); i++ {
+		ret[len(ret)-i] = ipBytes[len(ipBytes)-i]
+	}
+	return net.IP(ret)
 }
