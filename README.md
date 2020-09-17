@@ -57,7 +57,7 @@ This will display help for the tool. Here are all the switches it supports.
 | -l	      | File containing list of CIDRs				      | mapcidr -l cidr.txt				    |
 | -o 		    | File to write output to (optional)		    | mapcidr -o output.txt		      |
 | -silent 	| Make the output silent					          | mapcidr -silent					      |
-| -version	| Print current version of chaos client		  | mapcidr -version					    |
+| -version	| Print current version of mapcidr client		  | mapcidr -version					    |
 
 # Running mapCIDR
 
