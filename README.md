@@ -32,13 +32,13 @@ The tool was developed to ease load distribution for mass scanning operations, i
 ### From Source
 
 ```sh
-▶ GO111MODULE=auto go get -u github.com/projectdiscovery/mapcidr/cmd/mapcidr
+▶ GO111MODULE=on go get -v github.com/projectdiscovery/mapcidr/cmd/mapcidr
 ```
 
 ### From Github
 
 ```sh
-▶ git clone https://github.com/projectdiscovery/mapcidr.git; cd mapcidr/cmd/mapcidr; go build .; cp mapcidr /usr/local/bin
+▶ git clone https://github.com/projectdiscovery/mapcidr.git; cd mapcidr/cmd/mapcidr; go build ; cp mapcidr /usr/local/bin
 ```
 
 # Usage:- 
@@ -49,15 +49,15 @@ The tool was developed to ease load distribution for mass scanning operations, i
 
 This will display help for the tool. Here are all the switches it supports.
 
-| Flag    	| Description                              	| Example                   		|
-|-----------|------------------------------------------ |---------------------------		|
-| -cidr     | Single CIDR to process					          | mapcidr -cidr 173.0.84.0/24		|
-| -sbc      | Slice by CIDR count						            | mapcidr -sbc 10					      |
-| -sbh      | Slice by HOST count				   		          | mapcidr -sbh 10000				    |
-| -l	      | File containing list of CIDRs				      | mapcidr -l cidr.txt				    |
-| -o 		    | File to write output to (optional)		    | mapcidr -o output.txt		      |
-| -silent 	| Make the output silent					          | mapcidr -silent					      |
-| -version	| Print current version of mapcidr client		  | mapcidr -version					    |
+| Flag    | Description                             | Example                     |
+| ------- | --------------------------------------- | --------------------------- |
+| cidr    | Single CIDR to process                  | mapcidr -cidr 173.0.84.0/24 |
+| sbc     | Slice by CIDR count                     | mapcidr -sbc 10             |
+| sbh     | Slice by HOST count                     | mapcidr -sbh 10000          |
+| l       | File containing list of CIDRs           | mapcidr -l cidr.txt         |
+| o       | File to write output to (optional)      | mapcidr -o output.txt       |
+| silent  | Make the output silent                  | mapcidr -silent             |
+| version | Print current version of mapcidr client | mapcidr -version            |
 
 # Running mapCIDR
 
