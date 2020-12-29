@@ -160,7 +160,7 @@ func main() {
 	}
 
 	// List all ips in the CIDR
-	ips, _ := mapcidr.Ips("192.168.1.0/24")
+	ips, _ := mapcidr.IPAddresses("192.168.1.0/24")
 	for _, ip := range ips {
 		fmt.Println(ip)
 	}
