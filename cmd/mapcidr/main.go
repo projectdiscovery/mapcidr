@@ -20,6 +20,7 @@ type Options struct {
 	Silent    bool
 	Version   bool
 	Output    string
+	Aggregate bool
 	// NoColor   bool
 	// Verbose   bool
 }
@@ -48,6 +49,7 @@ func showBanner() {
 func ParseOptions() *Options {
 	options := &Options{}
 
+	flag.BoolVar(&options.Aggregate, "aggregate", false, "Aggregate CIDRs into the minimum number")
 	flag.IntVar(&options.Slices, "sbc", 0, "Slice by CIDR count")
 	flag.IntVar(&options.HostCount, "sbh", 0, "Slice by HOST count")
 	flag.StringVar(&options.Cidr, "cidr", "", "Single CIDR to process")
@@ -142,12 +144,21 @@ func main() {
 
 func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
+	var (
+		allCidrs []*net.IPNet
+		pCidr    *net.IPNet
+		err      error
+	)
 	for cidr := range chancidr {
 		// test if we have a cidr
-		if _, _, err := net.ParseCIDR(cidr); err != nil {
+		if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
 			gologger.Fatalf("%s\n", err)
 		}
-		if options.Slices > 0 {
+
+		// In case of coalesce we need to know all the cidrs and aggregate them by calling the proper function
+		if options.Aggregate {
+			allCidrs = append(allCidrs, pCidr)
+		} else if options.Slices > 0 {
 			subnets, err := mapcidr.SplitN(cidr, options.Slices)
 			if err != nil {
 				gologger.Fatalf("%s\n", err)
@@ -171,6 +182,17 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 			for _, ip := range ips {
 				outputchan <- ip
 			}
+		}
+	}
+
+	// Aggregate all ips into the minimal subset possible
+	if options.Aggregate {
+		cCidrsIPV4, cCidrsIPV6 := mapcidr.CoalesceCIDRs(allCidrs)
+		for _, cidrIPV4 := range cCidrsIPV4 {
+			outputchan <- cidrIPV4.String()
+		}
+		for _, cidrIPV6 := range cCidrsIPV6 {
+			outputchan <- cidrIPV6.String()
 		}
 	}
 
