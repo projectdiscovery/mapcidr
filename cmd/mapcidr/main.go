@@ -8,11 +8,13 @@ import (
 	"sync"
 
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
 )
 
 // Options contains cli options
 type Options struct {
+	FileIps   string
 	Slices    int
 	HostCount int
 	Cidr      string
@@ -49,6 +51,7 @@ func showBanner() {
 func ParseOptions() *Options {
 	options := &Options{}
 
+	flag.StringVar(&options.FileIps, "ips", "", "File containing ips to process")
 	flag.BoolVar(&options.Aggregate, "aggregate", false, "Aggregate CIDRs into the minimum number")
 	flag.IntVar(&options.Slices, "sbc", 0, "Slice by CIDR count")
 	flag.IntVar(&options.HostCount, "sbh", 0, "Slice by HOST count")
@@ -89,13 +92,6 @@ func (options *Options) validateOptions() {
 
 // configureOutput configures the output on the screen
 func (options *Options) configureOutput() {
-	// If the user desires verbose output, show verbose output
-	// if options.Verbose {
-	// 	gologger.MaxLevel = gologger.Verbose
-	// }
-	// if options.NoColor {
-	// 	gologger.UseColors = false
-	// }
 	if options.Silent {
 		gologger.MaxLevel = gologger.Silent
 	}
@@ -105,12 +101,13 @@ var options *Options
 
 func main() {
 	options = ParseOptions()
+	chanips := make(chan string)
 	chancidr := make(chan string)
 	outputchan := make(chan string)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	go process(&wg, chancidr, outputchan)
+	go process(&wg, chancidr, chanips, outputchan)
 	wg.Add(1)
 	go output(&wg, outputchan)
 
@@ -139,24 +136,49 @@ func main() {
 
 	close(chancidr)
 
+	// Start to process ips list
+	if options.FileIps != "" {
+		file, err := os.Open(options.FileIps)
+		if err != nil {
+			gologger.Fatalf("%s\n", err)
+		}
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			chanips <- scanner.Text()
+		}
+	}
+
+	close(chanips)
+
 	wg.Wait()
 }
 
-func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
+func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 	defer wg.Done()
 	var (
 		allCidrs []*net.IPNet
 		pCidr    *net.IPNet
+		ranger   *ipranger.IPRanger
 		err      error
 	)
+
+	ranger, _ = ipranger.New()
+
 	for cidr := range chancidr {
+		// if it's an ip turn it into a cidr
+		if net.ParseIP(cidr) != nil {
+			cidr += "/32"
+		}
+
 		// test if we have a cidr
 		if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
 			gologger.Fatalf("%s\n", err)
 		}
 
 		// In case of coalesce we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate {
+		if options.Aggregate || options.FileIps != "" {
+			ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else if options.Slices > 0 {
 			subnets, err := mapcidr.SplitN(cidr, options.Slices)
@@ -193,6 +215,13 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		}
 		for _, cidrIPV6 := range cCidrsIPV6 {
 			outputchan <- cidrIPV6.String()
+		}
+	}
+
+	// Process all ips if any
+	for ip := range chanips {
+		if ranger.Contains(ip) {
+			outputchan <- ip
 		}
 	}
 
