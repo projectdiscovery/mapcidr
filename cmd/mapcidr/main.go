@@ -8,8 +8,8 @@ import (
 	"sync"
 
 	"github.com/projectdiscovery/gologger"
-	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/gologger/levels"
+	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
 )
 
@@ -141,7 +141,7 @@ func main() {
 	if options.FileIps != "" {
 		file, err := os.Open(options.FileIps)
 		if err != nil {
-			gologger.Fatalf("%s\n", err)
+			gologger.Fatal().Msgf("%s\n", err)
 		}
 		defer file.Close()
 		scanner := bufio.NewScanner(file)
