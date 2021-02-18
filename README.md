@@ -1,47 +1,52 @@
-<h1 align="left">
+
+<h1 align="center">
   <img src="static/mapCIDR-logo.png" alt="mapCIDR" width="180px"></a>
   <br>
 </h1>
 
-[![License](https://img.shields.io/badge/license-MIT-_red.svg)](https://opensource.org/licenses/MIT)
-[![Go Report Card](https://goreportcard.com/badge/github.com/projectdiscovery/mapcidr)](https://goreportcard.com/report/github.com/projectdiscovery/mapcidr)
-[![contributions welcome](https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat)](https://github.com/projectdiscovery/mapcidr/issues)
-[![Follow on Twitter](https://img.shields.io/twitter/follow/pdiscoveryio.svg?logo=twitter)](https://twitter.com/pdiscoveryio)
-[![Chat on Discord](https://img.shields.io/discord/695645237418131507.svg?logo=discord)](https://discord.gg/KECAGdH)
-
-Small utility program to perform multiple operations for a given subnet/CIDR ranges. 
-
-The tool was developed to ease load distribution for mass scanning operations, it can be used both as a library and as independent CLI tool. 
+<h4 align="center">A utility program to perform multiple operations for a given subnet/CIDR ranges.</h4>
 
 
+<p align="center">
+<a href="https://github.com/projectdiscovery/mapcidr/issues"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat"></a>
+<a href="https://github.com/projectdiscovery/mapcidr/releases"><img src="https://img.shields.io/github/release/projectdiscovery/mapcidr"></a>
+<a href="https://twitter.com/pdiscovery"><img src="https://img.shields.io/twitter/follow/pdnuclei.svg?logo=twitter"></a>
+<a href="https://discord.gg/projectdiscovery"><img src="https://img.shields.io/discord/695645237418131507.svg?logo=discord"></a>
+</p>
+      
+<p align="center">
+  <a href="#features">Features</a> •
+  <a href="#installation">Install</a> •
+  <a href="#running-mapcidr">Usage</a> •
+  <a href="#use-mapcidr-as-a-library">Library</a> •
+  <a href="https://discord.gg/projectdiscovery">Join Discord</a>
+</p>
 
- # Features
+----
+
+mapCIDR is developed to ease load distribution for mass scanning operations, it can be used both as a library and as independent CLI tool.
+
+# Features
 
 <h1 align="left">
   <img src="static/mapCIDR-run.png" alt="mapCIDR" width="700px"></a>
   <br>
 </h1>
 
+ - CIDR expansion support
+ - CIDR slicing support
+ - CIDR/IP aggregation support
+ - IP/CIDR aggregation support
+ - CIDR based IP filter support
+ - STD IN/OUT support
 
- - Simple and modular code base making it easy to contribute.
- - **CIDR distribution** for distributed scanning.  
- - **Stdin** and **stdout** support for integrating in workflows
-
-# Installation:- 
-
-### From Source
+# Installation
 
 ```sh
 ▶ GO111MODULE=on go get -v github.com/projectdiscovery/mapcidr/cmd/mapcidr
 ```
 
-### From Github
-
-```sh
-▶ git clone https://github.com/projectdiscovery/mapcidr.git; cd mapcidr/cmd/mapcidr; go build ; cp mapcidr /usr/local/bin
-```
-
-# Usage:- 
+# Usage
 
 ```sh
 ▶ mapcidr -h
@@ -49,15 +54,17 @@ The tool was developed to ease load distribution for mass scanning operations, i
 
 This will display help for the tool. Here are all the switches it supports.
 
-| Flag    | Description                             | Example                     |
-| ------- | --------------------------------------- | --------------------------- |
-| cidr    | Single CIDR to process                  | mapcidr -cidr 173.0.84.0/24 |
-| sbc     | Slice by CIDR count                     | mapcidr -sbc 10             |
-| sbh     | Slice by HOST count                     | mapcidr -sbh 10000          |
-| l       | File containing list of CIDRs           | mapcidr -l cidr.txt         |
-| o       | File to write output to (optional)      | mapcidr -o output.txt       |
-| silent  | Make the output silent                  | mapcidr -silent             |
-| version | Print current version of mapcidr client | mapcidr -version            |
+| Flag      | Description                             | Example                     |
+| --------- | --------------------------------------- | --------------------------- |
+| aggregate | Aggregate CIDRs into the minimum number | mapcidr -aggregate          |
+| cidr      | Single CIDR to process                  | mapcidr -cidr 173.0.84.0/24 |
+| ips       | File containing ips to process          | mapcidr -ips ips.txt        |
+| sbc       | Slice by CIDR count                     | mapcidr -sbc 10             |
+| sbh       | Slice by HOST count                     | mapcidr -sbh 10000          |
+| l         | File containing list of CIDRs           | mapcidr -l cidr.txt         |
+| o         | File to write output to (optional)      | mapcidr -o output.txt       |
+| silent    | Make the output silent                  | mapcidr -silent             |
+| version   | Print current version of mapcidr client | mapcidr -version            |
 
 # Running mapCIDR
 
@@ -73,7 +80,7 @@ In order to get list of IPs for a give CIDR, use the following command.
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.1
+/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.5
           /_/                                                     	 
 
 		projectdiscovery.io
@@ -93,7 +100,7 @@ In order to get list of IPs for a give CIDR, use the following command.
 173.0.84.16
 ```
 
-## Slice by CIDR 
+### Slice by CIDR 
 
 In order to slice given CIDR or list of CIDR by CIDR count or slice into multiple and equal smaller subnets, use the following command.
 
@@ -116,7 +123,7 @@ In order to slice given CIDR or list of CIDR by CIDR count or slice into multipl
 173.0.84.224/28
 ```
 
-## Slice by HOST 
+### Slice by HOST 
 
 In order to slice given CIDR for equal number of host count in each CIDR, use the following command.
 
