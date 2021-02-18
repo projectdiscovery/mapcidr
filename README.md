@@ -36,7 +36,6 @@ mapCIDR is developed to ease load distribution for mass scanning operations, it 
  - CIDR expansion support
  - CIDR slicing support
  - CIDR/IP aggregation support
- - IP/CIDR aggregation support
  - CIDR based IP filter support
  - STD IN/OUT support
 
