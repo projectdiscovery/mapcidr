@@ -32,12 +32,12 @@ const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.0.2
+/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.0.5
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const Version = `0.0.2`
+const Version = `0.0.5`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
