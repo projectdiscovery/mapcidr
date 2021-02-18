@@ -4,7 +4,7 @@
   <br>
 </h1>
 
-<h4 align="center">A utility program to perform multiple operations for a given subnet/CIDR ranges.</h4>
+<h4 align="center">A utility program to perform multiple operations for a given subnet/cidr ranges.</h4>
 
 
 <p align="center">
