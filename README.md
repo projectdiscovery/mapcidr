@@ -33,11 +33,11 @@ mapCIDR is developed to ease load distribution for mass scanning operations, it 
   <br>
 </h1>
 
- - CIDR expansion support
- - CIDR slicing support
- - CIDR/IP aggregation support
- - CIDR based IP filter support
- - STD IN/OUT support
+ - CIDR expansion support.
+ - CIDR slicing support.
+ - CIDR/IP aggregation support.
+ - CIDR based IP filter support.
+ - STD IN/OUT support.
 
 # Installation
 
@@ -69,10 +69,10 @@ This will display help for the tool. Here are all the switches it supports.
 
 In order to get list of IPs for a give CIDR, use the following command.
 
+### CIDR expansion
+
 ```sh
 ▶ mapcidr -cidr 173.0.84.0/24
-▶ echo 173.0.84.0/24 | mapcidr
-
 ```
 
 ```sh
@@ -99,14 +99,13 @@ In order to get list of IPs for a give CIDR, use the following command.
 173.0.84.16
 ```
 
-### Slice by CIDR 
+### CIDR Slicing by CIDR
 
 In order to slice given CIDR or list of CIDR by CIDR count or slice into multiple and equal smaller subnets, use the following command.
 
 
 ```sh
 ▶ mapcidr -cidr 173.0.84.0/24 -sbc 10 -silent
-▶ echo 173.0.84.0/24 | mapcidr -sbc 10 -silent
 ```
 
 ```
@@ -122,13 +121,12 @@ In order to slice given CIDR or list of CIDR by CIDR count or slice into multipl
 173.0.84.224/28
 ```
 
-### Slice by HOST 
+### CIDR slicing by HOST 
 
 In order to slice given CIDR for equal number of host count in each CIDR, use the following command.
 
 ```sh
 ▶ mapcidr -cidr 173.0.84.0/16 -sbh 20000 -silent
-▶ echo 173.0.84.0/16 | mapcidr -sbh 20000 -silent
 ```
 
 ```
@@ -139,6 +137,28 @@ In order to slice given CIDR for equal number of host count in each CIDR, use th
 ```
 
 Note: it's possible to obtain a perfect split only when the desired amount of slices or hosts per subnet is a powers of two. Otherwise the tool will attempt to automatically find the best split strategy to obtain the desired outcome. 
+
+### CIDR/IP aggregation
+
+In order to merge multiple CIDR ranges into smaller subnet block, use the following command.
+
+```sh
+▶ mapcidr -l cidrs.txt -silent -aggregate
+```
+
+In order to list CIDR blocks for given list of IP's, use the following command.
+
+```sh
+▶ mapcidr -l ips.txt -silent -aggregate
+```
+
+### CIDR based IP filtering
+
+In order to filter IP's from the given list of CIDR ranges, use the following command.
+
+```sh
+▶ mapcidr -ips ip-list.txt -l cirds.txt
+```
 
 # Use mapCIDR as a library
 
