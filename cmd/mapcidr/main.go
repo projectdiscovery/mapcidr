@@ -8,11 +8,14 @@ import (
 	"sync"
 
 	"github.com/projectdiscovery/gologger"
+	"github.com/projectdiscovery/gologger/levels"
+	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
 )
 
 // Options contains cli options
 type Options struct {
+	FileIps   string
 	Slices    int
 	HostCount int
 	Cidr      string
@@ -20,6 +23,7 @@ type Options struct {
 	Silent    bool
 	Version   bool
 	Output    string
+	Aggregate bool
 	// NoColor   bool
 	// Verbose   bool
 }
@@ -28,26 +32,28 @@ const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.0.2
+/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.0.5
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const Version = `0.0.2`
+const Version = `0.0.5`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
-	gologger.Printf("%s\n", banner)
-	gologger.Printf("\t\tprojectdiscovery.io\n\n")
+	gologger.Print().Msgf("%s\n", banner)
+	gologger.Print().Msgf("\t\tprojectdiscovery.io\n\n")
 
-	gologger.Labelf("Use with caution. You are responsible for your actions\n")
-	gologger.Labelf("Developers assume no liability and are not responsible for any misuse or damage.\n")
+	gologger.Print().Msgf("Use with caution. You are responsible for your actions\n")
+	gologger.Print().Msgf("Developers assume no liability and are not responsible for any misuse or damage.\n")
 }
 
 // ParseOptions parses the command line options for application
 func ParseOptions() *Options {
 	options := &Options{}
 
+	flag.StringVar(&options.FileIps, "ips", "", "File containing ips to process")
+	flag.BoolVar(&options.Aggregate, "aggregate", false, "Aggregate CIDRs into the minimum number")
 	flag.IntVar(&options.Slices, "sbc", 0, "Slice by CIDR count")
 	flag.IntVar(&options.HostCount, "sbh", 0, "Slice by HOST count")
 	flag.StringVar(&options.Cidr, "cidr", "", "Single CIDR to process")
@@ -63,7 +69,7 @@ func ParseOptions() *Options {
 	showBanner()
 
 	if options.Version {
-		gologger.Infof("Current Version: %s\n", Version)
+		gologger.Info().Msgf("Current Version: %s\n", Version)
 		os.Exit(0)
 	}
 
@@ -73,29 +79,22 @@ func ParseOptions() *Options {
 }
 func (options *Options) validateOptions() {
 	if options.Cidr == "" && !hasStdin() && options.FileCidr == "" {
-		gologger.Fatalf("No input provided!\n")
+		gologger.Fatal().Msgf("No input provided!\n")
 	}
 
 	if options.Slices > 0 && options.HostCount > 0 {
-		gologger.Fatalf("sbc and sbh cant be used together!\n")
+		gologger.Fatal().Msgf("sbc and sbh cant be used together!\n")
 	}
 
 	if options.Cidr != "" && options.FileCidr != "" {
-		gologger.Fatalf("CIDR and List input cant be used together!\n")
+		gologger.Fatal().Msgf("CIDR and List input cant be used together!\n")
 	}
 }
 
 // configureOutput configures the output on the screen
 func (options *Options) configureOutput() {
-	// If the user desires verbose output, show verbose output
-	// if options.Verbose {
-	// 	gologger.MaxLevel = gologger.Verbose
-	// }
-	// if options.NoColor {
-	// 	gologger.UseColors = false
-	// }
 	if options.Silent {
-		gologger.MaxLevel = gologger.Silent
+		gologger.DefaultLogger.SetMaxLevel(levels.LevelSilent)
 	}
 }
 
@@ -103,12 +102,13 @@ var options *Options
 
 func main() {
 	options = ParseOptions()
+	chanips := make(chan string)
 	chancidr := make(chan string)
 	outputchan := make(chan string)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	go process(&wg, chancidr, outputchan)
+	go process(&wg, chancidr, chanips, outputchan)
 	wg.Add(1)
 	go output(&wg, outputchan)
 
@@ -126,7 +126,7 @@ func main() {
 	if options.FileCidr != "" {
 		file, err := os.Open(options.FileCidr)
 		if err != nil {
-			gologger.Fatalf("%s\n", err)
+			gologger.Fatal().Msgf("%s\n", err)
 		}
 		defer file.Close()
 		scanner := bufio.NewScanner(file)
@@ -137,20 +137,54 @@ func main() {
 
 	close(chancidr)
 
+	// Start to process ips list
+	if options.FileIps != "" {
+		file, err := os.Open(options.FileIps)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		defer file.Close()
+		scanner := bufio.NewScanner(file)
+		for scanner.Scan() {
+			chanips <- scanner.Text()
+		}
+	}
+
+	close(chanips)
+
 	wg.Wait()
 }
 
-func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
+func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 	defer wg.Done()
+	var (
+		allCidrs []*net.IPNet
+		pCidr    *net.IPNet
+		ranger   *ipranger.IPRanger
+		err      error
+	)
+
+	ranger, _ = ipranger.New()
+
 	for cidr := range chancidr {
-		// test if we have a cidr
-		if _, _, err := net.ParseCIDR(cidr); err != nil {
-			gologger.Fatalf("%s\n", err)
+		// if it's an ip turn it into a cidr
+		if net.ParseIP(cidr) != nil {
+			cidr += "/32"
 		}
-		if options.Slices > 0 {
+
+		// test if we have a cidr
+		if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+
+		// In case of coalesce we need to know all the cidrs and aggregate them by calling the proper function
+		if options.Aggregate || options.FileIps != "" {
+			ranger.AddIPNet(pCidr)
+			allCidrs = append(allCidrs, pCidr)
+		} else if options.Slices > 0 {
 			subnets, err := mapcidr.SplitN(cidr, options.Slices)
 			if err != nil {
-				gologger.Fatalf("%s\n", err)
+				gologger.Fatal().Msgf("%s\n", err)
 			}
 			for _, subnet := range subnets {
 				outputchan <- subnet.String()
@@ -158,7 +192,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		} else if options.HostCount > 0 {
 			subnets, err := mapcidr.SplitByNumber(cidr, options.HostCount)
 			if err != nil {
-				gologger.Fatalf("%s\n", err)
+				gologger.Fatal().Msgf("%s\n", err)
 			}
 			for _, subnet := range subnets {
 				outputchan <- subnet.String()
@@ -166,11 +200,29 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		} else {
 			ips, err := mapcidr.IPAddresses(cidr)
 			if err != nil {
-				gologger.Fatalf("%s\n", err)
+				gologger.Fatal().Msgf("%s\n", err)
 			}
 			for _, ip := range ips {
 				outputchan <- ip
 			}
+		}
+	}
+
+	// Aggregate all ips into the minimal subset possible
+	if options.Aggregate {
+		cCidrsIPV4, cCidrsIPV6 := mapcidr.CoalesceCIDRs(allCidrs)
+		for _, cidrIPV4 := range cCidrsIPV4 {
+			outputchan <- cidrIPV4.String()
+		}
+		for _, cidrIPV6 := range cCidrsIPV6 {
+			outputchan <- cidrIPV6.String()
+		}
+	}
+
+	// Process all ips if any
+	for ip := range chanips {
+		if ranger.Contains(ip) {
+			outputchan <- ip
 		}
 	}
 
@@ -185,7 +237,7 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		var err error
 		f, err = os.Create(options.Output)
 		if err != nil {
-			gologger.Fatalf("Could not create output file '%s': %s\n", options.Output, err)
+			gologger.Fatal().Msgf("Could not create output file '%s': %s\n", options.Output, err)
 		}
 		defer f.Close()
 	}
@@ -193,7 +245,7 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		if o == "" {
 			continue
 		}
-		gologger.Silentf("%s\n", o)
+		gologger.Silent().Msgf("%s\n", o)
 		if f != nil {
 			f.WriteString(o + "\n")
 		}
