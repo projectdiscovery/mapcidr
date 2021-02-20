@@ -1,10 +1,6 @@
-FROM golang:1.14-alpine AS build-env
+FROM golang:1.16.0-alpine AS build-env
+RUN GO111MODULE=on go get -v github.com/projectdiscovery/mapcidr/cmd/mapcidr
 
-RUN apk add --no-cache --upgrade git openssh-client ca-certificates
-RUN go get -u github.com/golang/dep/cmd/dep
-WORKDIR /go/src/app
-
-# Install
-RUN go get -u github.com/projectdiscovery/mapcidr/cmd/mapcidr
-
+FROM alpine:latest
+COPY --from=build-env /go/bin/mapcidr /usr/local/bin/mapcidr
 ENTRYPOINT ["mapcidr"]
