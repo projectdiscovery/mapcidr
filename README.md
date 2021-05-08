@@ -37,6 +37,7 @@ mapCIDR is developed to ease load distribution for mass scanning operations, it 
  - CIDR slicing support.
  - CIDR/IP aggregation support.
  - CIDR based IP filter support.
+ - IP/PORT shuffling support.
  - STD IN/OUT support.
 
 # Installation
@@ -65,7 +66,7 @@ This will display help for the tool. Here are all the switches it supports.
 | silent    | Make the output silent                  | mapcidr -silent             |
 | version   | Print current version of mapcidr client | mapcidr -version            |
 | shuffle   | Shuffle ip with masscan blackrock cipher | mapcidr -shuffle            |
-| shuffle-ports   | Shuffle ip:port with comma seprated list of ports | mapcidr -shuffle -shuffle-ports 21,80,443            |
+| shuffle-ports   | Shuffle ip:port with comma seprated list of ports | mapcidr -shuffle-ports 21,80,443            |
 
 # Running mapCIDR
 
