@@ -64,6 +64,8 @@ This will display help for the tool. Here are all the switches it supports.
 | o         | File to write output to (optional)      | mapcidr -o output.txt       |
 | silent    | Make the output silent                  | mapcidr -silent             |
 | version   | Print current version of mapcidr client | mapcidr -version            |
+| shuffle   | Shuffle ip with masscan blackrock cipher | mapcidr -shuffle            |
+| shuffle-ports   | Shuffle ip:port with comma seprated list of ports | mapcidr -shuffle -shuffle-ports 21,80,443            |
 
 # Running mapCIDR
 

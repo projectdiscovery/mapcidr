@@ -27,3 +27,22 @@ func dec(IP net.IP) net.IP {
 	}
 	return decIP
 }
+
+func TotalIPSInCidrs(cidrs []*net.IPNet) (totalIPs uint64) {
+	for _, cidr := range cidrs {
+		totalIPs += AddressCountIpnet(cidr)
+	}
+
+	return
+}
+
+func AsIPV4CIDR(IPV4 string) *net.IPNet {
+	if IsIPv4(net.ParseIP(IPV4)) {
+		IPV4 += "/32"
+	}
+	_, network, err := net.ParseCIDR(IPV4)
+	if err != nil {
+		return nil
+	}
+	return network
+}
