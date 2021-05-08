@@ -80,6 +80,11 @@ func ParseOptions() *Options {
 		os.Exit(0)
 	}
 
+	// enable shuffling if ports are specified
+	if len(options.ShufflePorts) > 0 {
+		options.Shuffle = true
+	}
+
 	options.validateOptions()
 
 	return options
