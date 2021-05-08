@@ -5,7 +5,10 @@ import (
 	"flag"
 	"net"
 	"os"
+	"strconv"
+	"strings"
 	"sync"
+	"time"
 
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
@@ -15,15 +18,17 @@ import (
 
 // Options contains cli options
 type Options struct {
-	FileIps   string
-	Slices    int
-	HostCount int
-	Cidr      string
-	FileCidr  string
-	Silent    bool
-	Version   bool
-	Output    string
-	Aggregate bool
+	FileIps      string
+	Slices       int
+	HostCount    int
+	Cidr         string
+	FileCidr     string
+	Silent       bool
+	Version      bool
+	Output       string
+	Aggregate    bool
+	Shuffle      bool
+	ShufflePorts string
 	// NoColor   bool
 	// Verbose   bool
 }
@@ -32,12 +37,12 @@ const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.0.5
+/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.0.6
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const Version = `0.0.5`
+const Version = `v0.0.6`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
@@ -60,6 +65,8 @@ func ParseOptions() *Options {
 	flag.StringVar(&options.FileCidr, "l", "", "File containing CIDR")
 	flag.StringVar(&options.Output, "o", "", "File to write output to (optional)")
 	flag.BoolVar(&options.Silent, "silent", false, "Silent mode")
+	flag.BoolVar(&options.Shuffle, "shuffle", false, "Shuffle Ips")
+	flag.StringVar(&options.ShufflePorts, "shuffle-ports", "", "Shuffle Ips with ports")
 	flag.BoolVar(&options.Version, "version", false, "Show version")
 	flag.Parse()
 
@@ -71,6 +78,11 @@ func ParseOptions() *Options {
 	if options.Version {
 		gologger.Info().Msgf("Current Version: %s\n", Version)
 		os.Exit(0)
+	}
+
+	// enable shuffling if ports are specified
+	if len(options.ShufflePorts) > 0 {
+		options.Shuffle = true
 	}
 
 	options.validateOptions()
@@ -177,8 +189,8 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
 
-		// In case of coalesce we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate || options.FileIps != "" {
+		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
+		if options.Aggregate || options.FileIps != "" || options.Shuffle {
 			ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else if options.Slices > 0 {
@@ -204,6 +216,30 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 			}
 			for _, ip := range ips {
 				outputchan <- ip
+			}
+		}
+	}
+
+	// Shuffle perform the aggregation
+	if options.Shuffle {
+		var ports []int
+		if options.ShufflePorts != "" {
+			for _, p := range strings.Split(options.ShufflePorts, ",") {
+				port, err := strconv.Atoi(p)
+				if err != nil {
+					gologger.Fatal().Msgf("%s\n", err)
+				}
+				ports = append(ports, port)
+			}
+		}
+		cCidrsIPV4, _ := mapcidr.CoalesceCIDRs(allCidrs)
+		if len(ports) > 0 {
+			for ip := range mapcidr.ShuffleCidrsWithPortsAndSeed(cCidrsIPV4, ports, time.Now().Unix()) {
+				outputchan <- ip.String()
+			}
+		} else {
+			for ip := range mapcidr.ShuffleCidrsWithSeed(cCidrsIPV4, time.Now().Unix()) {
+				outputchan <- ip.IP
 			}
 		}
 	}
