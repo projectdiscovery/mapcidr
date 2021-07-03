@@ -10,8 +10,8 @@ import (
 )
 
 // AddressRange returns the first and last addresses in the given CIDR range.
-func AddressRange(network *net.IPNet) (net.IP, net.IP, error) {
-	firstIP := network.IP
+func AddressRange(network *net.IPNet) (firstIP, lastIP net.IP, err error) {
+	firstIP = network.IP
 
 	prefixLen, bits := network.Mask.Size()
 	if prefixLen == bits {
@@ -29,8 +29,8 @@ func AddressRange(network *net.IPNet) (net.IP, net.IP, error) {
 	lastIPInt.Lsh(lastIPInt, hostLen)
 	lastIPInt.Sub(lastIPInt, big.NewInt(1))
 	lastIPInt.Or(lastIPInt, firstIPInt)
-
-	return firstIP, IntegerToIP(lastIPInt, bits), nil
+	lastIP = IntegerToIP(lastIPInt, bits)
+	return
 }
 
 // AddressCount returns the number of IP addresses in a range
@@ -128,15 +128,9 @@ func SplitIPNetIntoN(iprange *net.IPNet, n int) ([]*net.IPNet, error) {
 	return subnets, nil
 }
 
-// divide divides an IPNet into two IPNet structures
-func divide(iprange string) ([]*net.IPNet, error) {
-	_, ipnet, _ := net.ParseCIDR(iprange)
-	return divideIPNet(ipnet)
-}
-
 // divideIPNet divides an IPNet into two IPNet structures.
 func divideIPNet(ipnet *net.IPNet) ([]*net.IPNet, error) {
-	subnets := make([]*net.IPNet, 0, 2)
+	subnets := make([]*net.IPNet, 0, 2) //nolint
 
 	maskBits, _ := ipnet.Mask.Size()
 	wantedMaskBits := maskBits + 1
@@ -146,7 +140,7 @@ func divideIPNet(ipnet *net.IPNet) ([]*net.IPNet, error) {
 		return nil, err
 	}
 	subnets = append(subnets, currentSubnet)
-	nextSubnet, _, err := nextSubnet(currentSubnet, wantedMaskBits)
+	nextSubnet, err := nextSubnet(currentSubnet, wantedMaskBits)
 	if err != nil {
 		return nil, err
 	}
@@ -173,7 +167,7 @@ func splitIPNet(ipnet *net.IPNet, n int) ([]*net.IPNet, error) {
 	subnets = append(subnets, currentSubnet)
 	nxtSubnet := currentSubnet
 	for i := 0; i < closestPow2-1; i++ {
-		nxtSubnet, _, err = nextSubnet(nxtSubnet, wantedMaskBits)
+		nxtSubnet, err = nextSubnet(nxtSubnet, wantedMaskBits)
 		if err != nil {
 			return nil, err
 		}
@@ -190,11 +184,6 @@ func splitIPNet(ipnet *net.IPNet, n int) ([]*net.IPNet, error) {
 		subnets = append(subnets, ipnets...)
 	}
 	return subnets, nil
-}
-
-func split(iprange string, n int) ([]*net.IPNet, error) {
-	_, ipnet, _ := net.ParseCIDR(iprange)
-	return splitIPNet(ipnet, n)
 }
 
 func nextPowerOfTwo(v uint32) uint32 {
@@ -221,41 +210,28 @@ func currentSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, error) {
 	if err != nil {
 		return nil, err
 	}
-	mask := net.CIDRMask(prefixLen, 8*len(currentFirst))
+	mask := net.CIDRMask(prefixLen, 8*len(currentFirst)) //nolint
 	return &net.IPNet{IP: currentFirst.Mask(mask), Mask: mask}, nil
 }
 
-func previousSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, bool) {
-	startIP := network.IP
-	previousIP := make(net.IP, len(startIP))
-	copy(previousIP, startIP)
-	cMask := net.CIDRMask(prefixLen, 8*len(previousIP))
-	previousIP = dec(previousIP)
-	previous := &net.IPNet{IP: previousIP.Mask(cMask), Mask: cMask}
-	if startIP.Equal(net.IPv4zero) || startIP.Equal(net.IPv6zero) {
-		return previous, true
-	}
-	return previous, false
-}
-
 // nextSubnet returns the next subnet for an ipnet
-func nextSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, bool, error) {
+func nextSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, error) {
 	_, currentLast, err := AddressRange(network)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
-	mask := net.CIDRMask(prefixLen, 8*len(currentLast))
+	mask := net.CIDRMask(prefixLen, 8*len(currentLast)) //nolint
 	currentSubnet := &net.IPNet{IP: currentLast.Mask(mask), Mask: mask}
 	_, last, err := AddressRange(currentSubnet)
 	if err != nil {
-		return nil, false, err
+		return nil, err
 	}
 	last = inc(last)
 	next := &net.IPNet{IP: last.Mask(mask), Mask: mask}
 	if last.Equal(net.IPv4zero) || last.Equal(net.IPv6zero) {
-		return next, true, nil
+		return next, nil
 	}
-	return next, false, nil
+	return next, nil
 }
 
 func isPowerOfTwoPlusOne(x int) bool {
@@ -295,7 +271,7 @@ func IPAddressesIPnet(ipnet *net.IPNet) (ips []string) {
 	// loop through addresses as uint32
 	for i := start; i <= finish; i++ {
 		// convert back to net.IP
-		ip := make(net.IP, 4)
+		ip := make(net.IP, 4) //nolint
 		binary.BigEndian.PutUint32(ip, i)
 		ips = append(ips, ip.String())
 	}
@@ -309,18 +285,18 @@ func IPToInteger(ip net.IP) (*big.Int, int, error) {
 	val.SetBytes([]byte(ip))
 
 	if len(ip) == net.IPv4len {
-		return val, 32, nil
+		return val, 32, nil //nolint
 	} else if len(ip) == net.IPv6len {
-		return val, 128, nil
+		return val, 128, nil //nolint
 	} else {
-		return nil, 0, fmt.Errorf("Unsupported address length %d", len(ip))
+		return nil, 0, fmt.Errorf("unsupported address length %d", len(ip))
 	}
 }
 
 // IntegerToIP converts an Integer IP address to net.IP format.
 func IntegerToIP(ipInt *big.Int, bits int) net.IP {
 	ipBytes := ipInt.Bytes()
-	ret := make([]byte, bits/8)
+	ret := make([]byte, bits/8) //nolint
 	for i := 1; i <= len(ipBytes); i++ {
 		ret[len(ret)-i] = ipBytes[len(ipBytes)-i]
 	}

@@ -140,7 +140,7 @@ func main() {
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
-		defer file.Close()
+		defer file.Close() //nolint
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			chancidr <- scanner.Text()
@@ -155,7 +155,7 @@ func main() {
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
-		defer file.Close()
+		defer file.Close() //nolint
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			chanips <- scanner.Text()
@@ -191,7 +191,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 		if options.Aggregate || options.FileIps != "" || options.Shuffle {
-			ranger.AddIPNet(pCidr)
+			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else if options.Slices > 0 {
 			subnets, err := mapcidr.SplitN(cidr, options.Slices)
@@ -275,7 +275,7 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		if err != nil {
 			gologger.Fatal().Msgf("Could not create output file '%s': %s\n", options.Output, err)
 		}
-		defer f.Close()
+		defer f.Close() //nolint
 	}
 	for o := range outputchan {
 		if o == "" {
@@ -283,7 +283,7 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		}
 		gologger.Silent().Msgf("%s\n", o)
 		if f != nil {
-			f.WriteString(o + "\n")
+			_, _ = f.WriteString(o + "\n")
 		}
 	}
 }

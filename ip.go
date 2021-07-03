@@ -28,7 +28,7 @@ func CountIPsInCIDR(ipnet *net.IPNet) *big.Int {
 	}
 	return big.NewInt(0).
 		Sub(
-			big.NewInt(2).Exp(big.NewInt(2),
+			big.NewInt(2).Exp(big.NewInt(2), //nolint
 				big.NewInt(int64(size-subnet)), nil),
 			big.NewInt(1),
 		)
@@ -88,7 +88,7 @@ func (s NetsByRange) Less(i, j int) bool {
 	}
 
 	// Then compare by first IP.
-	firstComparison := bytes.Compare(*s[i].First, *s[i].First)
+	firstComparison := bytes.Compare(*s[i].First, *s[j].First)
 	if firstComparison < 0 {
 		return true
 	} else if firstComparison > 0 {
@@ -110,7 +110,6 @@ func (s NetsByRange) Len() int {
 // the set of CIDRs which  were removed. Both input slices may be modified by
 // calling this function.
 func RemoveCIDRs(allowCIDRs, removeCIDRs []*net.IPNet) ([]*net.IPNet, error) {
-
 	// Ensure that we iterate through the provided CIDRs in order of largest
 	// subnet first.
 	sort.Sort(NetsByMask(removeCIDRs))
@@ -134,7 +133,6 @@ PreLoop:
 	for _, remove := range removeCIDRs {
 	Loop:
 		for i, allowCIDR := range allowCIDRs {
-
 			// Don't allow comparison of different address spaces.
 			if allowCIDR.IP.To4() != nil && remove.IP.To4() == nil ||
 				allowCIDR.IP.To4() == nil && remove.IP.To4() != nil {
@@ -163,24 +161,6 @@ PreLoop:
 	}
 
 	return allowCIDRs, nil
-}
-
-func getNetworkPrefix(ipNet *net.IPNet) *net.IP {
-	var mask net.IP
-
-	if ipNet.IP.To4() == nil {
-		mask = make(net.IP, net.IPv6len)
-		for i := 0; i < len(ipNet.Mask); i++ {
-			mask[net.IPv6len-i-1] = ipNet.IP[net.IPv6len-i-1] & ^ipNet.Mask[i]
-		}
-	} else {
-		mask = make(net.IP, net.IPv4len)
-		for i := 0; i < net.IPv4len; i++ {
-			mask[net.IPv4len-i-1] = ipNet.IP[net.IPv6len-i-1] & ^ipNet.Mask[i]
-		}
-	}
-
-	return &mask
 }
 
 func removeCIDR(allowCIDR, removeCIDR *net.IPNet) ([]*net.IPNet, error) {
@@ -254,18 +234,11 @@ func getByteIndexOfBit(bit uint) uint {
 	return net.IPv6len - (bit / 8) - 1
 }
 
-func getNthBit(ip *net.IP, bitNum uint) uint8 {
-	byteNum := getByteIndexOfBit(bitNum)
-	bits := (*ip)[byteNum]
-	b := uint8(bits)
-	return b >> (bitNum % 8) & 1
-}
-
 func flipNthBit(ip *[]byte, bitNum uint) *[]byte {
 	ipCopy := make([]byte, len(*ip))
 	copy(ipCopy, *ip)
 	byteNum := getByteIndexOfBit(bitNum)
-	ipCopy[byteNum] = ipCopy[byteNum] ^ 1<<(bitNum%8)
+	ipCopy[byteNum] ^= 1 << (bitNum % 8)
 
 	return &ipCopy
 }
@@ -289,7 +262,7 @@ func ipNetToRange(ipNet net.IPNet) netWithRange {
 	copy(lastIPMask, ipNet.Mask)
 	for i := range lastIPMask {
 		lastIPMask[len(lastIPMask)-i-1] = ^lastIPMask[len(lastIPMask)-i-1]
-		lastIP[net.IPv6len-i-1] = lastIP[net.IPv6len-i-1] | lastIPMask[len(lastIPMask)-i-1]
+		lastIP[net.IPv6len-i-1] |= lastIPMask[len(lastIPMask)-i-1]
 	}
 
 	return netWithRange{First: &firstIP, Last: &lastIP, Network: &ipNet}
@@ -398,7 +371,7 @@ func createSpanningCIDR(r netWithRange) net.IPNet {
 
 	// If ipv4, need to append 0s because math.Big gets rid of preceding zeroes.
 	if isIPv4 {
-		highest = append(ipv4LeadingZeroes, highestBig.Bytes()...)
+		highest = append(ipv4LeadingZeroes, highestBig.Bytes()...) //nolint
 	} else {
 		highest = highestBig.Bytes()
 	}
@@ -493,8 +466,7 @@ func coalesceRanges(ranges []*netWithRange) []*net.IPNet {
 //
 // Note: this algorithm was ported from the Python library netaddr.
 // https://github.com/drkjam/netaddr .
-func CoalesceCIDRs(cidrs []*net.IPNet) ([]*net.IPNet, []*net.IPNet) {
-
+func CoalesceCIDRs(cidrs []*net.IPNet) (coalescedIPV4, coalescedIPV6 []*net.IPNet) {
 	ranges4 := []*netWithRange{}
 	ranges6 := []*netWithRange{}
 
@@ -506,14 +478,14 @@ func CoalesceCIDRs(cidrs []*net.IPNet) ([]*net.IPNet, []*net.IPNet) {
 			ranges6 = append(ranges6, &newNetToRange)
 		}
 	}
-
-	return coalesceRanges(mergeAdjacentCIDRs(ranges4)), coalesceRanges(mergeAdjacentCIDRs(ranges6))
+	coalescedIPV4 = coalesceRanges(mergeAdjacentCIDRs(ranges4))
+	coalescedIPV6 = coalesceRanges(mergeAdjacentCIDRs(ranges6))
+	return
 }
 
 // rangeToCIDRs converts the range of IPs covered by firstIP and lastIP to
 // a list of CIDRs that contains all of the IPs covered by the range.
 func rangeToCIDRs(firstIP, lastIP net.IP) []*net.IPNet {
-
 	// First, create a CIDR that spans both IPs.
 	spanningCIDR := createSpanningCIDR(netWithRange{&firstIP, &lastIP, nil})
 	spanningRange := ipNetToRange(spanningCIDR)
@@ -575,7 +547,7 @@ func rangeToCIDRs(firstIP, lastIP net.IP) []*net.IPNet {
 // contained within the targetCIDR (nil otherwise), and the
 // third is a list containing the networks to the right of the excludeCIDR in
 // the partition.
-func partitionCIDR(targetCIDR net.IPNet, excludeCIDR net.IPNet) ([]*net.IPNet, []*net.IPNet, []*net.IPNet) {
+func partitionCIDR(targetCIDR, excludeCIDR net.IPNet) (left, excludeList, right []*net.IPNet) { //nolint
 	var targetIsIPv4 bool
 	if targetCIDR.IP.To4() != nil {
 		targetIsIPv4 = true
@@ -603,8 +575,8 @@ func partitionCIDR(targetCIDR net.IPNet, excludeCIDR net.IPNet) ([]*net.IPNet, [
 		return nil, []*net.IPNet{&targetCIDR}, nil
 	}
 
-	left := []*net.IPNet{}
-	right := []*net.IPNet{}
+	left = []*net.IPNet{}
+	right = []*net.IPNet{}
 
 	newPrefixLen := targetMaskSize + 1
 
@@ -631,7 +603,7 @@ func partitionCIDR(targetCIDR net.IPNet, excludeCIDR net.IPNet) ([]*net.IPNet, [
 	} else {
 		bitLen = ipv6BitLen
 	}
-	shiftAmount := (uint)(bitLen - newPrefixLen)
+	shiftAmount := uint(bitLen - newPrefixLen)
 
 	targetIPInt := big.NewInt(0)
 	targetIPInt.SetBytes(targetFirstIP.To16())
@@ -651,8 +623,8 @@ func partitionCIDR(targetCIDR net.IPNet, excludeCIDR net.IPNet) ([]*net.IPNet, [
 		// for use with net.IP / net.IPNet.
 		var iUpperBytes, iLowerBytes []byte
 		if targetIsIPv4 {
-			iUpperBytes = append(ipv4LeadingZeroes, iUpper.Bytes()...)
-			iLowerBytes = append(ipv4LeadingZeroes, iLower.Bytes()...)
+			iUpperBytes = append(ipv4LeadingZeroes, iUpper.Bytes()...) //nolint
+			iLowerBytes = append(ipv4LeadingZeroes, iLower.Bytes()...) //nolint
 		} else {
 			iUpperBytesLen := len(iUpper.Bytes())
 			// Make sure that the number of bytes in the array matches what net
@@ -660,20 +632,18 @@ func partitionCIDR(targetCIDR net.IPNet, excludeCIDR net.IPNet) ([]*net.IPNet, [
 			if iUpperBytesLen != net.IPv6len {
 				numZeroesToAppend := net.IPv6len - iUpperBytesLen
 				zeroBytes := make([]byte, numZeroesToAppend)
-				iUpperBytes = append(zeroBytes, iUpper.Bytes()...)
+				iUpperBytes = append(zeroBytes, iUpper.Bytes()...) //nolint
 			} else {
 				iUpperBytes = iUpper.Bytes()
-
 			}
 
 			iLowerBytesLen := len(iLower.Bytes())
 			if iLowerBytesLen != net.IPv6len {
 				numZeroesToAppend := net.IPv6len - iLowerBytesLen
 				zeroBytes := make([]byte, numZeroesToAppend)
-				iLowerBytes = append(zeroBytes, iLower.Bytes()...)
+				iLowerBytes = append(zeroBytes, iLower.Bytes()...) //nolint
 			} else {
 				iLowerBytes = iLower.Bytes()
-
 			}
 		}
 		// If the IP we are excluding over is of a higher value than the current
@@ -696,9 +666,8 @@ func partitionCIDR(targetCIDR net.IPNet, excludeCIDR net.IPNet) ([]*net.IPNet, [
 
 		iLower = iLower.Set(matched)
 		iUpper = iUpper.Add(matched, big.NewInt(0).Lsh(big.NewInt(1), uint(bitLen-newPrefixLen)))
-
 	}
-	excludeList := []*net.IPNet{&excludeCIDR}
+	excludeList = []*net.IPNet{&excludeCIDR}
 
 	return left, excludeList, right
 }
@@ -772,19 +741,19 @@ func IsIPv4(ip net.IP) bool {
 	return ip.To4() != nil
 }
 
-// Convert uint to net.IP
-func Inet_ntoa(ipnr int64) net.IP {
-	var bytes [4]byte
-	bytes[0] = byte(ipnr & 0xFF)
-	bytes[1] = byte((ipnr >> 8) & 0xFF)
-	bytes[2] = byte((ipnr >> 16) & 0xFF)
-	bytes[3] = byte((ipnr >> 24) & 0xFF)
+// Inet_ntoa convert uint to net.IP
+func Inet_ntoa(ipnr int64) net.IP { //nolint
+	var b [4]byte
+	b[0] = byte(ipnr & 0xFF)         //nolint
+	b[1] = byte((ipnr >> 8) & 0xFF)  //nolint
+	b[2] = byte((ipnr >> 16) & 0xFF) //nolint
+	b[3] = byte((ipnr >> 24) & 0xFF) //nolint
 
-	return net.IPv4(bytes[3], bytes[2], bytes[1], bytes[0])
+	return net.IPv4(b[3], b[2], b[1], b[0])
 }
 
-// Convert net.IP to int64
-func Inet_aton(ipnr net.IP) int64 {
+// Inet_aton convert net.IP to int64
+func Inet_aton(ipnr net.IP) int64 { //nolint
 	bits := strings.Split(ipnr.String(), ".")
 
 	b0, _ := strconv.Atoi(bits[0])
