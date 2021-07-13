@@ -186,6 +186,11 @@ func splitIPNet(ipnet *net.IPNet, n int) ([]*net.IPNet, error) {
 	return subnets, nil
 }
 
+// func split(iprange string, n int) ([]*net.IPNet, error) {
+// 	_, ipnet, _ := net.ParseCIDR(iprange)
+// 	return splitIPNet(ipnet, n)
+// }
+
 func nextPowerOfTwo(v uint32) uint32 {
 	v--
 	v |= v >> 1
@@ -213,6 +218,19 @@ func currentSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, error) {
 	mask := net.CIDRMask(prefixLen, 8*len(currentFirst)) //nolint
 	return &net.IPNet{IP: currentFirst.Mask(mask), Mask: mask}, nil
 }
+
+// func previousSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, bool) {
+// 	startIP := network.IP
+// 	previousIP := make(net.IP, len(startIP))
+// 	copy(previousIP, startIP)
+// 	cMask := net.CIDRMask(prefixLen, 8*len(previousIP))
+// 	previousIP = dec(previousIP)
+// 	previous := &net.IPNet{IP: previousIP.Mask(cMask), Mask: cMask}
+// 	if startIP.Equal(net.IPv4zero) || startIP.Equal(net.IPv6zero) {
+// 		return previous, true
+// 	}
+// 	return previous, false
+// }
 
 // nextSubnet returns the next subnet for an ipnet
 func nextSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, error) {

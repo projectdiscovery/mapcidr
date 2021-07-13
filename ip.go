@@ -163,6 +163,24 @@ PreLoop:
 	return allowCIDRs, nil
 }
 
+// func getNetworkPrefix(ipNet *net.IPNet) *net.IP {
+// 	var mask net.IP
+
+// 	if ipNet.IP.To4() == nil {
+// 		mask = make(net.IP, net.IPv6len)
+// 		for i := 0; i < len(ipNet.Mask); i++ {
+// 			mask[net.IPv6len-i-1] = ipNet.IP[net.IPv6len-i-1] & ^ipNet.Mask[i]
+// 		}
+// 	} else {
+// 		mask = make(net.IP, net.IPv4len)
+// 		for i := 0; i < net.IPv4len; i++ {
+// 			mask[net.IPv4len-i-1] = ipNet.IP[net.IPv6len-i-1] & ^ipNet.Mask[i]
+// 		}
+// 	}
+
+// 	return &mask
+// }
+
 func removeCIDR(allowCIDR, removeCIDR *net.IPNet) ([]*net.IPNet, error) {
 	var allowIsIpv4, removeIsIpv4 bool
 	var allowBitLen int
@@ -233,6 +251,13 @@ func removeCIDR(allowCIDR, removeCIDR *net.IPNet) ([]*net.IPNet, error) {
 func getByteIndexOfBit(bit uint) uint {
 	return net.IPv6len - (bit / 8) - 1
 }
+
+// func getNthBit(ip *net.IP, bitNum uint) uint8 {
+// 	byteNum := getByteIndexOfBit(bitNum)
+// 	bits := (*ip)[byteNum]
+// 	b := uint8(bits)
+// 	return b >> (bitNum % 8) & 1
+// }
 
 func flipNthBit(ip *[]byte, bitNum uint) *[]byte {
 	ipCopy := make([]byte, len(*ip))
