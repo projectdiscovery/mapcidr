@@ -6,6 +6,7 @@ import (
 	"github.com/projectdiscovery/blackrock"
 )
 
+// ShuffleCidrsWithSeed uses blackrock to visit all ips in random order
 func ShuffleCidrsWithSeed(cidrs []*net.IPNet, seed int64) chan Item {
 	// Shrink and compact
 	cidrs, _ = CoalesceCIDRs(cidrs)
@@ -27,6 +28,7 @@ func ShuffleCidrsWithSeed(cidrs []*net.IPNet, seed int64) chan Item {
 	return out
 }
 
+// ShuffleCidrsWithPortsAndSeed uses blackrock to visit all ips and ports combinations in random order
 func ShuffleCidrsWithPortsAndSeed(cidrs []*net.IPNet, ports []int, seed int64) chan Item {
 	// Shrink and compact
 	cidrs, _ = CoalesceCIDRs(cidrs)
@@ -53,6 +55,7 @@ func ShuffleCidrsWithPortsAndSeed(cidrs []*net.IPNet, ports []int, seed int64) c
 	return out
 }
 
+// PickIP takes an ip from a list of subnets
 func PickIP(cidrs []*net.IPNet, index int64) string {
 	for _, target := range cidrs {
 		subnetIpsCount := int64(AddressCountIpnet(target))
@@ -65,14 +68,17 @@ func PickIP(cidrs []*net.IPNet, index int64) string {
 	return ""
 }
 
+// PickSubnetIP takes an ip from a subnet
 func PickSubnetIP(network *net.IPNet, index int64) string {
 	return Inet_ntoa(Inet_aton(network.IP) + index).String()
 }
 
+// PickPort takes a port from a list
 func PickPort(ports []int, index int) int {
 	return ports[index]
 }
 
+// CIDRsAsIPNET converts a list of cidrs to ipnet
 func CIDRsAsIPNET(cidrs []string) (ipnets []*net.IPNet) {
 	for _, cidr := range cidrs {
 		ipnets = append(ipnets, AsIPV4CIDR(cidr))
