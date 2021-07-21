@@ -277,22 +277,42 @@ func IPAddresses(cidr string) ([]string, error) {
 	return IPAddressesIPnet(ipnet), nil
 }
 
+func IPAddressesAsStream(cidr string) (chan string, error) {
+	_, ipnet, err := net.ParseCIDR(cidr)
+	if err != nil {
+		return nil, err
+	}
+	return ipAddresses(ipnet), nil
+}
+
 // IPAddressesIPnet returns all IP addresses in an IPNet.
 func IPAddressesIPnet(ipnet *net.IPNet) (ips []string) {
-	// convert IPNet struct mask and address to uint32
-	mask := binary.BigEndian.Uint32(ipnet.Mask)
-	start := binary.BigEndian.Uint32(ipnet.IP)
-
-	// find the final address
-	finish := (start & mask) | (mask ^ 0xffffffff)
-
-	// loop through addresses as uint32
-	for i := start; i <= finish; i++ {
-		// convert back to net.IP
-		ip := make(net.IP, 4) //nolint
-		binary.BigEndian.PutUint32(ip, i)
-		ips = append(ips, ip.String())
+	for ip := range ipAddresses(ipnet) {
+		ips = append(ips, ip)
 	}
+	return ips
+}
+
+func ipAddresses(ipnet *net.IPNet) (ips chan string) {
+	ips = make(chan string)
+	go func() {
+		defer close(ips)
+
+		// convert IPNet struct mask and address to uint32
+		mask := binary.BigEndian.Uint32(ipnet.Mask)
+		start := binary.BigEndian.Uint32(ipnet.IP)
+
+		// find the final address
+		finish := (start & mask) | (mask ^ 0xffffffff)
+
+		// loop through addresses as uint32
+		for i := start; i <= finish; i++ {
+			// convert back to net.IP
+			ip := make(net.IP, 4) //nolint
+			binary.BigEndian.PutUint32(ip, i)
+			ips <- ip.String()
+		}
+	}()
 	return ips
 }
 

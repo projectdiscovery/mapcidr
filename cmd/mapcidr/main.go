@@ -210,11 +210,11 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 				outputchan <- subnet.String()
 			}
 		} else {
-			ips, err := mapcidr.IPAddresses(cidr)
+			ips, err := mapcidr.IPAddressesAsStream(cidr)
 			if err != nil {
 				gologger.Fatal().Msgf("%s\n", err)
 			}
-			for _, ip := range ips {
+			for ip := range ips {
 				outputchan <- ip
 			}
 		}
