@@ -1,14 +1,14 @@
-name: Build
+name: 🔨 Build Test
 on:
   push:
-    branches:
-      - master
   pull_request:
-  
-jobs:          
+  workflow_dispatch:
+
+
+jobs:  
   build:
-    name: Build
-    runs-on: ubuntu-latest 
+    name: Test Builds
+    runs-on: ubuntu-latest
     steps:
       - name: Set up Go
         uses: actions/setup-go@v2
