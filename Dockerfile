@@ -1,4 +1,4 @@
-FROM golang:1.16.7-alpine AS build-env
+FROM golang:1.17.0-alpine AS build-env
 RUN GO111MODULE=on go get -v github.com/projectdiscovery/mapcidr/cmd/mapcidr
 
 FROM alpine:latest
