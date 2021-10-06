@@ -2,7 +2,6 @@ package main
 
 import (
 	"bufio"
-	"flag"
 	"net"
 	"os"
 	"strconv"
@@ -10,6 +9,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/ipranger"
@@ -56,19 +56,33 @@ func showBanner() {
 // ParseOptions parses the command line options for application
 func ParseOptions() *Options {
 	options := &Options{}
+	flagSet := goflags.NewFlagSet()
+	flagSet.SetDescription(`mapCIDR is developed to ease load distribution for mass scanning operations, it can be used both as a library and as independent CLI tool.`)
 
-	flag.StringVar(&options.FileIps, "ips", "", "File containing ips to process")
-	flag.BoolVar(&options.Aggregate, "aggregate", false, "Aggregate CIDRs into the minimum number")
-	flag.IntVar(&options.Slices, "sbc", 0, "Slice by CIDR count")
-	flag.IntVar(&options.HostCount, "sbh", 0, "Slice by HOST count")
-	flag.StringVar(&options.Cidr, "cidr", "", "Single CIDR to process")
-	flag.StringVar(&options.FileCidr, "l", "", "File containing CIDR")
-	flag.StringVar(&options.Output, "o", "", "File to write output to (optional)")
-	flag.BoolVar(&options.Silent, "silent", false, "Silent mode")
-	flag.BoolVar(&options.Shuffle, "shuffle", false, "Shuffle Ips")
-	flag.StringVar(&options.ShufflePorts, "shuffle-ports", "", "Shuffle Ips with ports")
-	flag.BoolVar(&options.Version, "version", false, "Show version")
-	flag.Parse()
+	//output
+	createGroup(flagSet, "output", "Output",
+		flagSet.StringVar(&options.Output, "o", "", "File to write output to (optional)"),
+		flagSet.BoolVar(&options.Silent, "silent", false, "Silent mode"),
+		flagSet.BoolVar(&options.Version, "version", false, "Show version"),
+	)
+
+	//input
+	createGroup(flagSet, "input", "Target",
+		flagSet.StringVar(&options.Cidr, "cidr", "", "Single CIDR to process"),
+		flagSet.StringVar(&options.FileCidr, "l", "", "File containing CIDR"),
+		flagSet.StringVar(&options.FileIps, "ips", "", "File containing ips to process"),
+	)
+
+	//template
+	createGroup(flagSet, "template", "Template",
+		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice by CIDR count"),
+		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice by HOST count"),
+		flagSet.BoolVar(&options.Aggregate, "aggregate", false, "Aggregate CIDRs into the minimum number"),
+		flagSet.BoolVar(&options.Shuffle, "shuffle", false, "Shuffle Ips"),
+		flagSet.StringVar(&options.ShufflePorts, "shuffle-ports", "", "Shuffle Ips with ports"),
+	)
+
+	_ = flagSet.Parse()
 
 	// Read the inputs and configure the logging
 	options.configureOutput()
@@ -297,4 +311,11 @@ func hasStdin() bool {
 		return false
 	}
 	return true
+}
+
+func createGroup(flagSet *goflags.FlagSet, groupName, description string, flags ...*goflags.FlagData) {
+	flagSet.SetGroup(groupName, description)
+	for _, currentFlag := range flags {
+		currentFlag.Group(groupName)
+	}
 }
