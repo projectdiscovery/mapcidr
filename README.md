@@ -54,19 +54,22 @@ mapCIDR is developed to ease load distribution for mass scanning operations, it 
 
 This will display help for the tool. Here are all the switches it supports.
 
-| Flag      | Description                             | Example                     |
-| --------- | --------------------------------------- | --------------------------- |
-| aggregate | Aggregate CIDRs into the minimum number | mapcidr -aggregate          |
-| cidr      | Single CIDR to process                  | mapcidr -cidr 173.0.84.0/24 |
-| ips       | File containing ips to process          | mapcidr -ips ips.txt        |
-| sbc       | Slice by CIDR count                     | mapcidr -sbc 10             |
-| sbh       | Slice by HOST count                     | mapcidr -sbh 10000          |
-| l         | File containing list of CIDRs           | mapcidr -l cidr.txt         |
-| o         | File to write output to (optional)      | mapcidr -o output.txt       |
-| silent    | Make the output silent                  | mapcidr -silent             |
-| version   | Print current version of mapcidr client | mapcidr -version            |
-| shuffle   | Shuffle ip with masscan blackrock cipher | mapcidr -shuffle            |
-| shuffle-ports   | Shuffle ip:port with comma seprated list of ports | mapcidr -shuffle-ports 21,80,443            |
+| Flag          | Description                             | Example                     |
+| ---------     | --------------------------------------- | --------------------------- |
+OUTPUT:                                                                                 |
+| o             | File to write output to (optional)      | mapcidr -o output.txt       |
+| silent        | Make the output silent                  | mapcidr -silent             |
+| version       | Print current version of mapcidr client | mapcidr -version            |
+TARGET:                                                                                 |
+| cidr          | Single CIDR to process                  | mapcidr -cidr 173.0.84.0/24  |
+| l             | File containing list of CIDRs           | mapcidr -l cidr.txt          |
+| ips           | File containing ips to process          | mapcidr -ips ips.txt         |
+TEMPLATE:                                                                                              |
+| sbc           | Slice by CIDR count                     | mapcidr -sbc 10                            |
+| sbh           | Slice by HOST count                     | mapcidr -sbh 10000                         |
+| aggregate     | Aggregate CIDRs into the minimum number | mapcidr -aggregate                         |
+| shuffle       | Shuffle ip with masscan blackrock cipher | mapcidr -shuffle                          |
+| shuffle-ports | Shuffle ip:port with comma seprated list of ports | mapcidr -shuffle-ports 21,80,443 |
 
 # Running mapCIDR
 
