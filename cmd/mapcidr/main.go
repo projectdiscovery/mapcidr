@@ -18,17 +18,19 @@ import (
 
 // Options contains cli options
 type Options struct {
-	FileIps      string
-	Slices       int
-	HostCount    int
-	Cidr         string
-	FileCidr     string
-	Silent       bool
-	Version      bool
-	Output       string
-	Aggregate    bool
-	Shuffle      bool
-	ShufflePorts string
+	FileIps         string
+	Slices          int
+	HostCount       int
+	Cidr            string
+	FileCidr        string
+	Silent          bool
+	Version         bool
+	Output          string
+	Aggregate       bool
+	Shuffle         bool
+	ShufflePorts    string
+	SkipBaseIP      bool
+	SkipBroadcastIP bool
 	// NoColor   bool
 	// Verbose   bool
 }
@@ -64,6 +66,8 @@ func ParseOptions() *Options {
 		flagSet.StringVar(&options.Output, "o", "", "File to write output to (optional)"),
 		flagSet.BoolVar(&options.Silent, "silent", false, "Silent mode"),
 		flagSet.BoolVar(&options.Version, "version", false, "Show version"),
+		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base ips (ending in .0)"),
+		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast ips (ending in .255)"),
 	)
 
 	//input
@@ -295,6 +299,13 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		if o == "" {
 			continue
 		}
+		if options.SkipBaseIP && mapcidr.IsBaseIP(o) {
+			continue
+		}
+		if options.SkipBroadcastIP && mapcidr.IsBroadcastIP(o) {
+			continue
+		}
+
 		gologger.Silent().Msgf("%s\n", o)
 		if f != nil {
 			_, _ = f.WriteString(o + "\n")
