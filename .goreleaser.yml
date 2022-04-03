@@ -19,3 +19,26 @@ archives:
       format_overrides:
           - goos: windows
             format: zip
+
+snapcrafts:
+  - id: mapcidr
+    replacements:
+      darwin: macOS
+    name: mapcidr
+    publish: false
+    summary: Utility to perform multiple operations for a given subnet/CIDR ranges
+    description: |
+      A utility program to perform multiple operations for a given subnet/cidr ranges. 
+      mapCIDR is developed to ease load distribution for mass scanning operations,
+      it can be used both as a library and as independent CLI tool.
+    grade: stable
+    confinement: strict
+    license: MIT
+    base: core18
+    apps:
+      mapcidr:
+        command: mapcidr
+        plugs:
+          - home
+          - network
+          - removable-media
