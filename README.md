@@ -43,7 +43,7 @@ mapCIDR is developed to ease load distribution for mass scanning operations, it 
 # Installation
 
 ```sh
-▶ GO111MODULE=on go get -v github.com/projectdiscovery/mapcidr/cmd/mapcidr
+▶ go install -v github.com/projectdiscovery/mapcidr/cmd/mapcidr@latest
 ```
 
 # Usage
@@ -54,19 +54,19 @@ mapCIDR is developed to ease load distribution for mass scanning operations, it 
 
 This will display help for the tool. Here are all the switches it supports.
 
-| Flag      | Description                             | Example                     |
-| --------- | --------------------------------------- | --------------------------- |
-| aggregate | Aggregate CIDRs into the minimum number | mapcidr -aggregate          |
-| cidr      | Single CIDR to process                  | mapcidr -cidr 173.0.84.0/24 |
-| ips       | File containing ips to process          | mapcidr -ips ips.txt        |
-| sbc       | Slice by CIDR count                     | mapcidr -sbc 10             |
-| sbh       | Slice by HOST count                     | mapcidr -sbh 10000          |
-| l         | File containing list of CIDRs           | mapcidr -l cidr.txt         |
-| o         | File to write output to (optional)      | mapcidr -o output.txt       |
-| silent    | Make the output silent                  | mapcidr -silent             |
-| version   | Print current version of mapcidr client | mapcidr -version            |
-| shuffle   | Shuffle ip with masscan blackrock cipher | mapcidr -shuffle            |
-| shuffle-ports   | Shuffle ip:port with comma seprated list of ports | mapcidr -shuffle-ports 21,80,443            |
+| Flag             | Description                                        | Example                            |
+|------------------|----------------------------------------------------|------------------------------------|
+| `-aggregate`     | Aggregate CIDRs into the minimum number            | `mapcidr -aggregate`               |
+| `-cidr`          | Single CIDR to process                             | `mapcidr -cidr 173.0.84.0/24`      |
+| `-ips`           | File containing ips to process                     | `mapcidr -ips ips.txt`             |
+| `-sbc`           | Slice by CIDR count                                | `mapcidr -sbc 10`                  |
+| `-sbh`           | Slice by HOST count                                | `mapcidr -sbh 10000`               |
+| `-l`             | File containing list of CIDRs                      | `mapcidr -l cidr.txt`              |
+| `-o`             | File to write output to (optional)                 | `mapcidr -o output.txt`            |
+| `-silent`        | Make the output silent                             | `mapcidr -silent`                  |
+| `-version`       | Print current version of `mapcidr` client          | `mapcidr -version`                 |
+| `-shuffle`       | Shuffle IP with masscan blackrock cipher           | `mapcidr -shuffle`                 |
+| `-shuffle-ports` | Shuffle IP:port with comma separated list of ports | `mapcidr -shuffle-ports 21,80,443` |
 
 # Running mapCIDR
 
@@ -139,7 +139,7 @@ In order to slice given CIDR for equal number of host count in each CIDR, use th
 173.0.192.0/18
 ```
 
-Note: it's possible to obtain a perfect split only when the desired amount of slices or hosts per subnet is a powers of two. Otherwise the tool will attempt to automatically find the best split strategy to obtain the desired outcome. 
+Note: it's possible to obtain a perfect split only when the desired amount of slices or hosts per subnet is a powers of two. Otherwise, the tool will attempt to automatically find the best split strategy to obtain the desired outcome. 
 
 ### CIDR/IP aggregation
 
@@ -149,7 +149,7 @@ In order to merge multiple CIDR ranges into smaller subnet block, use the follow
 ▶ mapcidr -l cidrs.txt -silent -aggregate
 ```
 
-In order to list CIDR blocks for given list of IP's, use the following command.
+In order to list CIDR blocks for given list of IPs, use the following command.
 
 ```sh
 ▶ mapcidr -l ips.txt -silent -aggregate
@@ -157,7 +157,7 @@ In order to list CIDR blocks for given list of IP's, use the following command.
 
 ### CIDR based IP filtering
 
-In order to filter IP's from the given list of CIDR ranges, use the following command.
+In order to filter IPs from the given list of CIDR ranges, use the following command.
 
 ```sh
 ▶ mapcidr -ips ip-list.txt -l cirds.txt
