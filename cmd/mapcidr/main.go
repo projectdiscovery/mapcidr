@@ -39,12 +39,12 @@ const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.0.8
+/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.0.9
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const Version = `v0.0.8`
+const Version = `v0.0.9`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
@@ -61,29 +61,29 @@ func ParseOptions() *Options {
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`mapCIDR is developed to ease load distribution for mass scanning operations, it can be used both as a library and as independent CLI tool.`)
 
+	//input
+	createGroup(flagSet, "input", "Input",
+		flagSet.StringVar(&options.Cidr, "cidr", "", "CIDR to process"),
+		flagSet.StringVarP(&options.FileCidr, "list", "l", "", "File containing list of CIDRs to process"),
+		flagSet.StringVarP(&options.FileIps, "ip-list", "il", "", "File containing list of IPs to process"),
+	)
+
+	//Process
+	createGroup(flagSet, "process", "Process",
+		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice CIDRs by given CIDR count"),
+		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice CIDRs by given HOST count"),
+		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate IPs/CIDRs into the minimum subnet"),
+		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "sip", false, "Shuffle input ip"),
+		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle input ip:port"),
+	)
+
 	//output
 	createGroup(flagSet, "output", "Output",
-		flagSet.StringVar(&options.Output, "o", "", "File to write output to (optional)"),
+		flagSet.StringVarP(&options.Output, "output", "o", "", "File to write output to"),
 		flagSet.BoolVar(&options.Silent, "silent", false, "Silent mode"),
 		flagSet.BoolVar(&options.Version, "version", false, "Show version"),
-		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base ips (ending in .0)"),
-		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast ips (ending in .255)"),
-	)
-
-	//input
-	createGroup(flagSet, "input", "Target",
-		flagSet.StringVar(&options.Cidr, "cidr", "", "Single CIDR to process"),
-		flagSet.StringVar(&options.FileCidr, "l", "", "File containing CIDR"),
-		flagSet.StringVar(&options.FileIps, "ips", "", "File containing ips to process"),
-	)
-
-	//template
-	createGroup(flagSet, "template", "Template",
-		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice by CIDR count"),
-		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice by HOST count"),
-		flagSet.BoolVar(&options.Aggregate, "aggregate", false, "Aggregate CIDRs into the minimum number"),
-		flagSet.BoolVar(&options.Shuffle, "shuffle", false, "Shuffle Ips"),
-		flagSet.StringVar(&options.ShufflePorts, "shuffle-ports", "", "Shuffle Ips with ports"),
+		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base IPs (ending in .0) in output"),
+		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast IPs (ending in .255) in output"),
 	)
 
 	_ = flagSet.Parse()
