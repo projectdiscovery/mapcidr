@@ -43,30 +43,37 @@ mapCIDR is developed to ease load distribution for mass scanning operations, it 
 # Installation
 
 ```sh
-▶ go install -v github.com/projectdiscovery/mapcidr/cmd/mapcidr@latest
+go install -v github.com/projectdiscovery/mapcidr/cmd/mapcidr@latest
 ```
 
 # Usage
 
 ```sh
-▶ mapcidr -h
+mapcidr -h
 ```
 
 This will display help for the tool. Here are all the switches it supports.
 
-| Flag             | Description                                        | Example                            |
-|------------------|----------------------------------------------------|------------------------------------|
-| `-aggregate`     | Aggregate CIDRs into the minimum number            | `mapcidr -aggregate`               |
-| `-cidr`          | Single CIDR to process                             | `mapcidr -cidr 173.0.84.0/24`      |
-| `-ips`           | File containing ips to process                     | `mapcidr -ips ips.txt`             |
-| `-sbc`           | Slice by CIDR count                                | `mapcidr -sbc 10`                  |
-| `-sbh`           | Slice by HOST count                                | `mapcidr -sbh 10000`               |
-| `-l`             | File containing list of CIDRs                      | `mapcidr -l cidr.txt`              |
-| `-o`             | File to write output to (optional)                 | `mapcidr -o output.txt`            |
-| `-silent`        | Make the output silent                             | `mapcidr -silent`                  |
-| `-version`       | Print current version of `mapcidr` client          | `mapcidr -version`                 |
-| `-shuffle`       | Shuffle IP with masscan blackrock cipher           | `mapcidr -shuffle`                 |
-| `-shuffle-ports` | Shuffle IP:port with comma separated list of ports | `mapcidr -shuffle-ports 21,80,443` |
+```yaml
+INPUT:
+   -cidr string          CIDR to process
+   -l, -list string      File containing list of CIDRs to process
+   -il, -ip-list string  File containing list of IPs to process
+
+PROCESS:
+   -sbc int                   Slice CIDRs by given CIDR count
+   -sbh int                   Slice CIDRs by given HOST count
+   -agg, -aggregate           Aggregate IPs/CIDRs into the minimum subnet
+   -sip, -shuffle-ip          Shuffle input ip
+   -sp, -shuffle-port string  Shuffle input ip:port
+
+OUTPUT:
+   -o, -output string  File to write output to
+   -silent             Silent mode
+   -version            Show version
+   -skip-base          Skip base IPs (ending in .0) in output
+   -skip-broadcast     Skip broadcast IPs (ending in .255) in output
+```
 
 # Running mapCIDR
 
@@ -74,11 +81,11 @@ In order to get list of IPs for a give CIDR, use the following command.
 
 ### CIDR expansion
 
-```sh
-▶ mapcidr -cidr 173.0.84.0/24
+```console
+mapcidr -cidr 173.0.84.0/24
 ```
 
-```sh
+```console
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
@@ -107,11 +114,11 @@ In order to get list of IPs for a give CIDR, use the following command.
 In order to slice given CIDR or list of CIDR by CIDR count or slice into multiple and equal smaller subnets, use the following command.
 
 
-```sh
-▶ mapcidr -cidr 173.0.84.0/24 -sbc 10 -silent
+```console
+mapcidr -cidr 173.0.84.0/24 -sbc 10 -silent
 ```
 
-```
+```console
 173.0.84.0/27
 173.0.84.32/27
 173.0.84.64/27
@@ -128,11 +135,11 @@ In order to slice given CIDR or list of CIDR by CIDR count or slice into multipl
 
 In order to slice given CIDR for equal number of host count in each CIDR, use the following command.
 
-```sh
-▶ mapcidr -cidr 173.0.84.0/16 -sbh 20000 -silent
+```console
+mapcidr -cidr 173.0.84.0/16 -sbh 20000 -silent
 ```
 
-```
+```console
 173.0.0.0/18
 173.0.64.0/18
 173.0.128.0/18
@@ -145,22 +152,22 @@ Note: it's possible to obtain a perfect split only when the desired amount of sl
 
 In order to merge multiple CIDR ranges into smaller subnet block, use the following command.
 
-```sh
-▶ mapcidr -l cidrs.txt -silent -aggregate
+```console
+mapcidr -l cidrs.txt -silent -aggregate
 ```
 
 In order to list CIDR blocks for given list of IPs, use the following command.
 
-```sh
-▶ mapcidr -l ips.txt -silent -aggregate
+```console
+mapcidr -l ips.txt -silent -aggregate
 ```
 
 ### CIDR based IP filtering
 
 In order to filter IPs from the given list of CIDR ranges, use the following command.
 
-```sh
-▶ mapcidr -ips ip-list.txt -l cirds.txt
+```console
+mapcidr -ips ip-list.txt -l cirds.txt
 ```
 
 # Use mapCIDR as a library

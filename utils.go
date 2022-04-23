@@ -1,6 +1,9 @@
 package mapcidr
 
-import "net"
+import (
+	"net"
+	"strings"
+)
 
 // inc increments an IP address to the next IP in the subnet
 func inc(ip net.IP) net.IP {
@@ -47,4 +50,14 @@ func AsIPV4CIDR(ipv4 string) *net.IPNet {
 		return nil
 	}
 	return network
+}
+
+func IsBaseIP(IP string) bool {
+	ipParsed := net.ParseIP(IP)
+	return ipParsed != nil && ipParsed.To4() != nil && strings.HasSuffix(IP, ".0")
+}
+
+func IsBroadcastIP(IP string) bool {
+	ipParsed := net.ParseIP(IP)
+	return ipParsed != nil && ipParsed.To4() != nil && strings.HasSuffix(IP, ".255")
 }
