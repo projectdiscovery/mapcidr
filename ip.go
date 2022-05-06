@@ -508,6 +508,44 @@ func CoalesceCIDRs(cidrs []*net.IPNet) (coalescedIPV4, coalescedIPV6 []*net.IPNe
 	return
 }
 
+func GuessIPs(ips []*net.IPNet) (guessedIPV4 []*net.IPNet) {
+	cidrs := make(map[string]*net.IPNet)
+
+	for _, ip := range ips {
+		if n, ok := cidrs[ip.IP.Mask(net.CIDRMask(24, 32)).String()]; ok {
+			var baseNet byte
+			var nowN, newN byte
+			for i := 8; i > 0; i-- {
+				nowN = n.IP[3] & (1 << (i - 1)) >> (i - 1)
+				newN = ip.IP[3] & (1 << (i - 1)) >> (i - 1)
+				if nowN&newN == 1 {
+					baseNet += 1 << (i - 1)
+				}
+				if nowN^newN == 1 {
+					n.Mask = net.CIDRMask(32-i, 32)
+					n.IP[3] = baseNet
+					break
+				}
+			}
+		} else {
+			cidrs[ip.IP.Mask(net.CIDRMask(24, 32)).String()] = ip
+		}
+	}
+
+	guessedIPV4 = make([]*net.IPNet, len(cidrs))
+	var index int
+	for _, cidr := range cidrs {
+		guessedIPV4[index] = cidr
+		index++
+	}
+
+	sort.Slice(guessedIPV4, func(i, j int) bool {
+		return bytes.Compare(guessedIPV4[i].IP, guessedIPV4[j].IP) < 0
+	})
+
+	return guessedIPV4
+}
+
 // rangeToCIDRs converts the range of IPs covered by firstIP and lastIP to
 // a list of CIDRs that contains all of the IPs covered by the range.
 func rangeToCIDRs(firstIP, lastIP net.IP) []*net.IPNet {
