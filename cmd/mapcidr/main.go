@@ -80,7 +80,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate IPs/CIDRs into the minimum subnet"),
 		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "sip", false, "Shuffle input ip"),
 		flagSet.BoolVar(&options.Sort, "sort", false, "sort input ip"),
-		flagSet.BoolVarP(&options.Reverse, "reverse", "rev", false, "sort input ip"),
+		flagSet.BoolVarP(&options.Reverse, "reverse", "rev", false, "reverse sort input ip"),
 		flagSet.BoolVar(&options.Guess, "guess", false, "guess ips into cidr"),
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle input ip:port"),
 	)
