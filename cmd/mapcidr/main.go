@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"net"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -32,6 +34,8 @@ type Options struct {
 	SkipBaseIP      bool
 	SkipBroadcastIP bool
 	Guess           bool
+	Sort            bool
+	Reverse         bool
 	// NoColor   bool
 	// Verbose   bool
 }
@@ -75,6 +79,8 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice CIDRs by given HOST count"),
 		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate IPs/CIDRs into the minimum subnet"),
 		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "sip", false, "Shuffle input ip"),
+		flagSet.BoolVar(&options.Sort, "sort", false, "sort input ip"),
+		flagSet.BoolVarP(&options.Reverse, "reverse", "rev", false, "sort input ip"),
 		flagSet.BoolVar(&options.Guess, "guess", false, "guess ips into cidr"),
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle input ip:port"),
 	)
@@ -110,7 +116,7 @@ func ParseOptions() *Options {
 	return options
 }
 func (options *Options) validateOptions() {
-	if options.Cidr == "" && !hasStdin() && options.FileCidr == "" {
+	if options.Cidr == "" && !hasStdin() && options.FileCidr == "" && options.FileIps == "" {
 		gologger.Fatal().Msgf("No input provided!\n")
 	}
 
@@ -210,7 +216,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		}
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate || options.FileIps != "" || options.Shuffle || options.Guess {
+		if options.Aggregate || options.FileIps != "" || options.Shuffle || options.Guess || options.Sort {
 			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else if options.Slices > 0 {
@@ -278,6 +284,41 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 	if options.Guess {
 		for _, cidr := range mapcidr.GuessIPs(allCidrs) {
 			outputchan <- cidr.String()
+		}
+	}
+
+	if options.Sort {
+		if options.FileIps != "" {
+			var ips []net.IP
+			for ip := range chanips {
+				ips = append(ips, net.ParseIP(ip))
+			}
+			if options.Reverse {
+				sort.Slice(ips, func(i, j int) bool {
+					return bytes.Compare(ips[j], ips[i]) < 0
+				})
+			} else {
+				sort.Slice(ips, func(i, j int) bool {
+					return bytes.Compare(ips[i], ips[j]) < 0
+				})
+			}
+
+			for _, ip := range ips {
+				outputchan <- ip.String()
+			}
+		} else {
+			if options.Reverse {
+				sort.Slice(allCidrs, func(i, j int) bool {
+					return bytes.Compare(allCidrs[j].IP, allCidrs[i].IP) < 0
+				})
+			} else {
+				sort.Slice(allCidrs, func(i, j int) bool {
+					return bytes.Compare(allCidrs[i].IP, allCidrs[j].IP) < 0
+				})
+			}
+			for _, cidr := range allCidrs {
+				outputchan <- cidr.String()
+			}
 		}
 	}
 
