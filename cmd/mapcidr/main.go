@@ -11,6 +11,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
@@ -34,8 +35,8 @@ type Options struct {
 	SkipBaseIP      bool
 	SkipBroadcastIP bool
 	Guess           bool
-	Sort            bool
-	Reverse         bool
+	SortAscending   bool
+	SortDescending  bool
 	// NoColor   bool
 	// Verbose   bool
 }
@@ -79,9 +80,8 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice CIDRs by given HOST count"),
 		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate IPs/CIDRs into the minimum subnet"),
 		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "sip", false, "Shuffle input ip"),
-		flagSet.BoolVar(&options.Sort, "sort", false, "sort input ip"),
-		flagSet.BoolVarP(&options.Reverse, "reverse", "rev", false, "reverse sort input ip"),
-		flagSet.BoolVar(&options.Guess, "guess", false, "guess ips into cidr"),
+		flagSet.BoolVar(&options.SortAscending, "sort", false, "Sort inputs in Ascending order"),
+		flagSet.BoolVar(&options.SortDescending, "sort-reverse", false, "Sort inputs in Descending order"),
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle input ip:port"),
 	)
 
@@ -115,8 +115,9 @@ func ParseOptions() *Options {
 
 	return options
 }
+
 func (options *Options) validateOptions() {
-	if options.Cidr == "" && !hasStdin() && options.FileCidr == "" && options.FileIps == "" {
+	if options.Cidr == "" && !fileutil.HasStdin() && options.FileCidr == "" && options.FileIps == "" {
 		gologger.Fatal().Msgf("No input provided!\n")
 	}
 
@@ -126,6 +127,10 @@ func (options *Options) validateOptions() {
 
 	if options.Cidr != "" && options.FileCidr != "" {
 		gologger.Fatal().Msgf("CIDR and List input cant be used together!\n")
+	}
+
+	if options.SortAscending && options.SortDescending {
+		gologger.Fatal().Msgf("Can sort only in one direction!\n")
 	}
 }
 
@@ -154,7 +159,7 @@ func main() {
 		chancidr <- options.Cidr
 	}
 
-	if hasStdin() {
+	if fileutil.HasStdin() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			chancidr <- scanner.Text()
@@ -200,6 +205,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		pCidr    *net.IPNet
 		ranger   *ipranger.IPRanger
 		err      error
+		hasSort  = options.SortAscending || options.SortDescending
 	)
 
 	ranger, _ = ipranger.New()
@@ -216,7 +222,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		}
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate || options.FileIps != "" || options.Shuffle || options.Guess || options.Sort {
+		if options.Aggregate || options.FileIps != "" || options.Shuffle || hasSort {
 			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else if options.Slices > 0 {
@@ -281,19 +287,13 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		}
 	}
 
-	if options.Guess {
-		for _, cidr := range mapcidr.GuessIPs(allCidrs) {
-			outputchan <- cidr.String()
-		}
-	}
-
-	if options.Sort {
+	if hasSort {
 		if options.FileIps != "" {
 			var ips []net.IP
 			for ip := range chanips {
 				ips = append(ips, net.ParseIP(ip))
 			}
-			if options.Reverse {
+			if options.SortDescending {
 				sort.Slice(ips, func(i, j int) bool {
 					return bytes.Compare(ips[j], ips[i]) < 0
 				})
@@ -307,7 +307,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 				outputchan <- ip.String()
 			}
 		} else {
-			if options.Reverse {
+			if options.SortDescending {
 				sort.Slice(allCidrs, func(i, j int) bool {
 					return bytes.Compare(allCidrs[j].IP, allCidrs[i].IP) < 0
 				})
@@ -360,17 +360,6 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 			_, _ = f.WriteString(o + "\n")
 		}
 	}
-}
-
-func hasStdin() bool {
-	fi, err := os.Stdin.Stat()
-	if err != nil {
-		return false
-	}
-	if fi.Mode()&os.ModeNamedPipe == 0 {
-		return false
-	}
-	return true
 }
 
 func createGroup(flagSet *goflags.FlagSet, groupName, description string, flags ...*goflags.FlagData) {
