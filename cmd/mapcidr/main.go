@@ -31,9 +31,7 @@ type Options struct {
 	ShufflePorts    string
 	SkipBaseIP      bool
 	SkipBroadcastIP bool
-	Guess           bool
-	// NoColor   bool
-	// Verbose   bool
+	AggregateApprox bool
 }
 
 const banner = `
@@ -73,9 +71,9 @@ func ParseOptions() *Options {
 	createGroup(flagSet, "process", "Process",
 		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice CIDRs by given CIDR count"),
 		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice CIDRs by given HOST count"),
-		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate IPs/CIDRs into the minimum subnet"),
+		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate input IPs/CIDRs into the minimum set of subnets"),
 		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "sip", false, "Shuffle input ip"),
-		flagSet.BoolVar(&options.Guess, "guess", false, "guess ips into cidr"),
+		flagSet.BoolVarP(&options.AggregateApprox, "aggregate-approx", "agg-approx", false, "Aggregate input with sparse IPs/CIDRs in the minimum set of approximated subnets"),
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle input ip:port"),
 	)
 
@@ -210,7 +208,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		}
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate || options.FileIps != "" || options.Shuffle || options.Guess {
+		if options.Aggregate || options.FileIps != "" || options.Shuffle || options.AggregateApprox {
 			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else if options.Slices > 0 {
@@ -275,8 +273,8 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		}
 	}
 
-	if options.Guess {
-		for _, cidr := range mapcidr.GuessIPs(allCidrs) {
+	if options.AggregateApprox {
+		for _, cidr := range mapcidr.AggregateApproxIPV4s(allCidrs) {
 			outputchan <- cidr.String()
 		}
 	}
