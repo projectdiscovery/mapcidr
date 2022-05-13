@@ -2,13 +2,16 @@ package main
 
 import (
 	"bufio"
+	"bytes"
 	"net"
 	"os"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
@@ -32,6 +35,8 @@ type Options struct {
 	SkipBaseIP      bool
 	SkipBroadcastIP bool
 	AggregateApprox bool
+	SortAscending   bool
+	SortDescending  bool
 }
 
 const banner = `
@@ -71,9 +76,11 @@ func ParseOptions() *Options {
 	createGroup(flagSet, "process", "Process",
 		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice CIDRs by given CIDR count"),
 		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice CIDRs by given HOST count"),
-		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate input IPs/CIDRs into the minimum set of subnets"),
-		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "sip", false, "Shuffle input ip"),
 		flagSet.BoolVarP(&options.AggregateApprox, "aggregate-approx", "agg-approx", false, "Aggregate input with sparse IPs/CIDRs in the minimum set of approximated subnets"),
+		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate IPs/CIDRs into the minimum subnet"),
+		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs/CIDRs in ascending order"),
+		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs/CIDRs in descending order"),
+		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "si", false, "Shuffle input ip"),
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle input ip:port"),
 	)
 
@@ -107,8 +114,9 @@ func ParseOptions() *Options {
 
 	return options
 }
+
 func (options *Options) validateOptions() {
-	if options.Cidr == "" && !hasStdin() && options.FileCidr == "" {
+	if options.Cidr == "" && !fileutil.HasStdin() && options.FileCidr == "" && options.FileIps == "" {
 		gologger.Fatal().Msgf("No input provided!\n")
 	}
 
@@ -118,6 +126,10 @@ func (options *Options) validateOptions() {
 
 	if options.Cidr != "" && options.FileCidr != "" {
 		gologger.Fatal().Msgf("CIDR and List input cant be used together!\n")
+	}
+
+	if options.SortAscending && options.SortDescending {
+		gologger.Fatal().Msgf("Can sort only in one direction!\n")
 	}
 }
 
@@ -146,7 +158,7 @@ func main() {
 		chancidr <- options.Cidr
 	}
 
-	if hasStdin() {
+	if fileutil.HasStdin() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
 			chancidr <- scanner.Text()
@@ -192,6 +204,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		pCidr    *net.IPNet
 		ranger   *ipranger.IPRanger
 		err      error
+		hasSort  = options.SortAscending || options.SortDescending
 	)
 
 	ranger, _ = ipranger.New()
@@ -208,7 +221,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		}
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate || options.FileIps != "" || options.Shuffle || options.AggregateApprox {
+		if options.Aggregate || options.FileIps != "" || options.Shuffle || hasSort || options.AggregateApprox {
 			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else if options.Slices > 0 {
@@ -273,6 +286,41 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		}
 	}
 
+	if hasSort {
+		if options.FileIps != "" {
+			var ips []net.IP
+			for ip := range chanips {
+				ips = append(ips, net.ParseIP(ip))
+			}
+			if options.SortDescending {
+				sort.Slice(ips, func(i, j int) bool {
+					return bytes.Compare(ips[j], ips[i]) < 0
+				})
+			} else {
+				sort.Slice(ips, func(i, j int) bool {
+					return bytes.Compare(ips[i], ips[j]) < 0
+				})
+			}
+
+			for _, ip := range ips {
+				outputchan <- ip.String()
+			}
+		} else {
+			if options.SortDescending {
+				sort.Slice(allCidrs, func(i, j int) bool {
+					return bytes.Compare(allCidrs[j].IP, allCidrs[i].IP) < 0
+				})
+			} else {
+				sort.Slice(allCidrs, func(i, j int) bool {
+					return bytes.Compare(allCidrs[i].IP, allCidrs[j].IP) < 0
+				})
+			}
+			for _, cidr := range allCidrs {
+				outputchan <- cidr.String()
+			}
+		}
+	}
+
 	if options.AggregateApprox {
 		for _, cidr := range mapcidr.AggregateApproxIPV4s(allCidrs) {
 			outputchan <- cidr.String()
@@ -317,17 +365,6 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 			_, _ = f.WriteString(o + "\n")
 		}
 	}
-}
-
-func hasStdin() bool {
-	fi, err := os.Stdin.Stat()
-	if err != nil {
-		return false
-	}
-	if fi.Mode()&os.ModeNamedPipe == 0 {
-		return false
-	}
-	return true
 }
 
 func createGroup(flagSet *goflags.FlagSet, groupName, description string, flags ...*goflags.FlagData) {
