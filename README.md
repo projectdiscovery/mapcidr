@@ -169,7 +169,10 @@ $ cat ips.txt
 1.1.1.1
 1.1.1.16
 1.1.1.31
-$ cat ips.txt | go run . -agg-approx
+```
+
+```console
+$ cat ips.txt | mapcidr -agg-approx
 1.1.1.0/27
 ```
 
