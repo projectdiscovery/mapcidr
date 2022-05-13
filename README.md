@@ -162,6 +162,20 @@ In order to list CIDR blocks for given list of IPs, use the following command.
 mapcidr -l ips.txt -silent -aggregate
 ```
 
+It's also possible to perform approximated aggregations for sparse ips groups (only version 4). The final interval will contain contiguous ips not belonging to the input:
+
+```console
+$ cat ips.txt 
+1.1.1.1
+1.1.1.16
+1.1.1.31
+```
+
+```console
+$ cat ips.txt | mapcidr -agg-approx
+1.1.1.0/27
+```
+
 ### CIDR based IP filtering
 
 In order to filter IPs from the given list of CIDR ranges, use the following command.
