@@ -39,6 +39,7 @@ type Options struct {
 	SortAscending   bool
 	SortDescending  bool
 	Count           bool
+
 }
 
 const banner = `
@@ -337,6 +338,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		}
 		outputchan <- ipSum.String()
 	}
+
 
 	// Process all ips if any
 	for ip := range chanips {
