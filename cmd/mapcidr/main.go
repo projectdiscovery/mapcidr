@@ -81,10 +81,10 @@ func ParseOptions() *Options {
 		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice CIDRs by given HOST count"),
 		flagSet.BoolVarP(&options.AggregateApprox, "aggregate-approx", "agg-approx", false, "Aggregate input with sparse IPs/CIDRs in the minimum set of approximated subnets"),
 		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate IPs/CIDRs into the minimum subnet"),
+		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of hosts in given CIDR"),
 		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs/CIDRs in ascending order"),
 		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs/CIDRs in descending order"),
 		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "si", false, "Shuffle input ip"),
-		flagSet.BoolVarP(&options.Count, "count", "c", false, "Shuffle input ip"),
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle input ip:port"),
 	)
 
