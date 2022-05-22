@@ -833,3 +833,33 @@ func Inet_aton(ipnr net.IP) int64 { //nolint
 
 	return sum
 }
+
+// ToIP6 converts an IP to IP6
+func ToIP6(host string) (string, error) {
+	ip := net.ParseIP(host)
+	switch {
+	default:
+		return "", ParseIPError
+	case ip == nil:
+		return "", ParseIPError
+	case ip.To16() != nil:
+		return host, nil
+	case ip.To4() != nil:
+		return ip.To16().String(), nil
+	}
+}
+
+// ToIP6 converts an IP to IP4
+func ToIP4(host string) (string, error) {
+	ip := net.ParseIP(host)
+	switch {
+	default:
+		return "", ParseIPError
+	case ip == nil:
+		return "", ParseIPError
+	case ip.To4() != nil:
+		return host, nil
+	case ip.To16() != nil:
+		return ip.To4().String(), nil
+	}
+}
