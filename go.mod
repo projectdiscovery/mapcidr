@@ -8,7 +8,6 @@ require (
 	github.com/projectdiscovery/goflags v0.0.7
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/ipranger v0.0.2
-	github.com/projectdiscovery/stringsutil v0.0.0-20220422150559-b54fb5dc6833
 )
 
 require (
@@ -22,6 +21,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/projectdiscovery/hmap v0.0.1 // indirect
+	github.com/projectdiscovery/stringsutil v0.0.0-20220422150559-b54fb5dc6833 // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect

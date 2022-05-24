@@ -21,17 +21,28 @@ const (
 // CountIPsInCIDR takes a RFC4632/RFC4291-formatted IPv4/IPv6 CIDR and
 // determines how many IP addresses reside within that CIDR.
 // Returns 0 if the input CIDR cannot be parsed.
-func CountIPsInCIDR(ipnet *net.IPNet) *big.Int {
+func CountIPsInCIDR(includeBase, includeBroadcast bool, ipnet *net.IPNet) *big.Int {
 	subnet, size := ipnet.Mask.Size()
 	if subnet == size {
 		return big.NewInt(1)
 	}
-	return big.NewInt(0).
-		Sub(
-			big.NewInt(2).Exp(big.NewInt(2), //nolint
-				big.NewInt(int64(size-subnet)), nil),
-			big.NewInt(1),
-		)
+	numberOfIps := big.NewInt(2).Exp(big.NewInt(2), big.NewInt(int64(size-subnet)), nil)
+	if !includeBase {
+		numberOfIps = numberOfIps.Sub(numberOfIps, big.NewInt(1))
+	}
+	if !includeBroadcast {
+		numberOfIps = numberOfIps.Sub(numberOfIps, big.NewInt(1))
+	}
+	return numberOfIps
+}
+
+// CountIPsInCIDR counts the number of ips from a group of cidr
+func CountIPsInCIDRs(includeBase, includeBroadcast bool, ipnets ...*net.IPNet) *big.Int {
+	numberOfIPs := big.NewInt(0)
+	for _, ipnet := range ipnets {
+		numberOfIPs = numberOfIPs.Add(numberOfIPs, CountIPsInCIDR(includeBase, includeBroadcast, ipnet))
+	}
+	return numberOfIPs
 }
 
 var (
