@@ -3,7 +3,6 @@ package main
 import (
 	"bufio"
 	"bytes"
-	"math/big"
 	"net"
 	"os"
 	"sort"
@@ -39,7 +38,6 @@ type Options struct {
 	SortAscending   bool
 	SortDescending  bool
 	Count           bool
-
 }
 
 const banner = `
@@ -332,13 +330,11 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 	}
 
 	if options.Count {
-		ipSum := big.NewInt(0)
-		for _, cidr := range allCidrs {
-			ipSum = ipSum.Add(ipSum, mapcidr.CountIPsInCIDR(cidr))
-		}
+		includeBase := !options.SkipBaseIP
+		includeBroadcast := !options.SkipBroadcastIP
+		ipSum := mapcidr.CountIPsInCIDRs(includeBase, includeBroadcast, allCidrs...)
 		outputchan <- ipSum.String()
 	}
-
 
 	// Process all ips if any
 	for ip := range chanips {
