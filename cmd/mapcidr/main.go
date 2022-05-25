@@ -144,6 +144,8 @@ func (options *Options) validateOptions() error {
 	if options.IP4 && options.IP6 {
 		return errors.New("IP4 and IP6 can't be used together")
 	}
+
+	return nil
 }
 
 // configureOutput configures the output on the screen
@@ -224,13 +226,27 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 
 	for cidr := range chancidr {
 		// if it's an ip turn it into a cidr
-		if net.ParseIP(cidr) != nil {
-			cidr += "/32"
+		if ip := net.ParseIP(cidr); ip != nil {
+			switch {
+			case ip.To4() != nil:
+				cidr += "/32"
+			case ip.To16() != nil:
+				cidr += "/128"
+			}
 		}
 
 		// test if we have a cidr
 		if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
+		}
+
+		// filters ip4|ip6, by default do not filter
+		_, bits := pCidr.Mask.Size()
+		isCidr4 := bits == mapcidr.DefaultMaskSize4
+		isCidr6 := bits > mapcidr.DefaultMaskSize4
+		isWrongIpType := (options.IP4 && isCidr6) || (options.IP6 && isCidr4)
+		if isWrongIpType {
+			continue
 		}
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
@@ -349,7 +365,19 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 
 	// Process all ips if any
 	for ip := range chanips {
-		if ranger.Contains(ip) {
+		ipnet := net.ParseIP(ip)
+		// check if we only need to filter/convert ips
+		switch {
+		case options.IP4:
+			if mapcidr.IsIPv4(ipnet) {
+				outputchan <- ipnet.To4().String()
+			}
+		case options.IP6:
+			// consider it as ip4 if it can be converted to it
+			if mapcidr.IsIPv6(ipnet) && !mapcidr.IsIPv4(ipnet) {
+				outputchan <- ipnet.To16().String()
+			}
+		case ranger.Contains(ip):
 			outputchan <- ip
 		}
 	}

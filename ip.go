@@ -46,6 +46,7 @@ func CountIPsInCIDRs(includeBase, includeBroadcast bool, ipnets ...*net.IPNet) *
 }
 
 var (
+	DefaultMaskSize4 = 32
 	// v4Mappedv6Prefix is the RFC2765 IPv4-mapped address prefix.
 	v4Mappedv6Prefix  = []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff}
 	ipv4LeadingZeroes = []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
@@ -173,24 +174,6 @@ PreLoop:
 
 	return allowCIDRs, nil
 }
-
-// func getNetworkPrefix(ipNet *net.IPNet) *net.IP {
-// 	var mask net.IP
-
-// 	if ipNet.IP.To4() == nil {
-// 		mask = make(net.IP, net.IPv6len)
-// 		for i := 0; i < len(ipNet.Mask); i++ {
-// 			mask[net.IPv6len-i-1] = ipNet.IP[net.IPv6len-i-1] & ^ipNet.Mask[i]
-// 		}
-// 	} else {
-// 		mask = make(net.IP, net.IPv4len)
-// 		for i := 0; i < net.IPv4len; i++ {
-// 			mask[net.IPv4len-i-1] = ipNet.IP[net.IPv6len-i-1] & ^ipNet.Mask[i]
-// 		}
-// 	}
-
-// 	return &mask
-// }
 
 func removeCIDR(allowCIDR, removeCIDR *net.IPNet) ([]*net.IPNet, error) {
 	var allowIsIpv4, removeIsIpv4 bool
@@ -813,6 +796,11 @@ func IPToPrefix(ip net.IP) *net.IPNet {
 // IsIPv4 returns true if the given IP is an IPv4
 func IsIPv4(ip net.IP) bool {
 	return ip.To4() != nil
+}
+
+// IsIPv4 returns true if the given IP is an IPv6
+func IsIPv6(ip net.IP) bool {
+	return ip.To16() != nil
 }
 
 // Inet_ntoa convert uint to net.IP
