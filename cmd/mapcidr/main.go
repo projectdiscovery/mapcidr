@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"net"
 	"os"
 	"sort"
@@ -38,6 +39,8 @@ type Options struct {
 	SortAscending   bool
 	SortDescending  bool
 	Count           bool
+	IP4             bool
+	IP6             bool
 }
 
 const banner = `
@@ -66,15 +69,15 @@ func ParseOptions() *Options {
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`mapCIDR is developed to ease load distribution for mass scanning operations, it can be used both as a library and as independent CLI tool.`)
 
-	//input
-	createGroup(flagSet, "input", "Input",
+	// Input
+	flagSet.CreateGroup("input", "Input",
 		flagSet.StringVar(&options.Cidr, "cidr", "", "CIDR to process"),
 		flagSet.StringVarP(&options.FileCidr, "list", "l", "", "File containing list of CIDRs to process"),
 		flagSet.StringVarP(&options.FileIps, "ip-list", "il", "", "File containing list of IPs to process"),
 	)
 
-	//Process
-	createGroup(flagSet, "process", "Process",
+	// Process
+	flagSet.CreateGroup("process", "Process",
 		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice CIDRs by given CIDR count"),
 		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice CIDRs by given HOST count"),
 		flagSet.BoolVarP(&options.AggregateApprox, "aggregate-approx", "agg-approx", false, "Aggregate input with sparse IPs/CIDRs in the minimum set of approximated subnets"),
@@ -86,13 +89,15 @@ func ParseOptions() *Options {
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle input ip:port"),
 	)
 
-	//output
-	createGroup(flagSet, "output", "Output",
+	// Output
+	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.Output, "output", "o", "", "File to write output to"),
 		flagSet.BoolVar(&options.Silent, "silent", false, "Silent mode"),
 		flagSet.BoolVar(&options.Version, "version", false, "Show version"),
 		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base IPs (ending in .0) in output"),
 		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast IPs (ending in .255) in output"),
+		flagSet.BoolVarP(&options.IP4, "ip4", "to-ip4", false, "Output only IPv4 ip/cidrs (attempts to convert ipv6 to ipv4)"),
+		flagSet.BoolVarP(&options.IP6, "ip6", "to-ip6", false, "Output only IPv6 ip/cidrs (attempts to convert ipv4 to ipv6)"),
 	)
 
 	_ = flagSet.Parse()
@@ -112,26 +117,32 @@ func ParseOptions() *Options {
 		options.Shuffle = true
 	}
 
-	options.validateOptions()
+	if err := options.validateOptions(); err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
+	}
 
 	return options
 }
 
-func (options *Options) validateOptions() {
+func (options *Options) validateOptions() error {
 	if options.Cidr == "" && !fileutil.HasStdin() && options.FileCidr == "" && options.FileIps == "" {
-		gologger.Fatal().Msgf("No input provided!\n")
+		return errors.New("No input provided!")
 	}
 
 	if options.Slices > 0 && options.HostCount > 0 {
-		gologger.Fatal().Msgf("sbc and sbh cant be used together!\n")
+		return errors.New("sbc and sbh cant be used together!")
 	}
 
 	if options.Cidr != "" && options.FileCidr != "" {
-		gologger.Fatal().Msgf("CIDR and List input cant be used together!\n")
+		return errors.New("CIDR and List input cant be used together!")
 	}
 
 	if options.SortAscending && options.SortDescending {
-		gologger.Fatal().Msgf("Can sort only in one direction!\n")
+		return errors.New("Can sort only in one direction!")
+	}
+
+	if options.IP4 && options.IP6 {
+		return errors.New("IP4 and IP6 can't be used together")
 	}
 }
 
@@ -373,12 +384,5 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		if f != nil {
 			_, _ = f.WriteString(o + "\n")
 		}
-	}
-}
-
-func createGroup(flagSet *goflags.FlagSet, groupName, description string, flags ...*goflags.FlagData) {
-	flagSet.SetGroup(groupName, description)
-	for _, currentFlag := range flags {
-		currentFlag.Group(groupName)
 	}
 }
