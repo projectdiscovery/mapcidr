@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"sort"
@@ -39,8 +40,10 @@ type Options struct {
 	SortAscending   bool
 	SortDescending  bool
 	Count           bool
-	IP4             bool
-	IP6             bool
+	FilterIP4       bool
+	FilterIP6       bool
+	ToIP4           bool
+	ToIP6           bool
 }
 
 const banner = `
@@ -96,8 +99,10 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.Version, "version", false, "Show version"),
 		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base IPs (ending in .0) in output"),
 		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast IPs (ending in .255) in output"),
-		flagSet.BoolVarP(&options.IP4, "ip4", "to-ip4", false, "Output only IPv4 ip/cidrs (attempts to convert ipv6 to ipv4)"),
-		flagSet.BoolVarP(&options.IP6, "ip6", "to-ip6", false, "Output only IPv6 ip/cidrs (attempts to convert ipv4 to ipv6)"),
+		flagSet.BoolVarP(&options.FilterIP4, "ipv4", "v4", false, "Output only valid IPv4 ip/cidrs (attempts to convert ipv6 to ipv4)"),
+		flagSet.BoolVarP(&options.FilterIP6, "ipv6", "v6", false, "Output only valid IPv6 ip/cidrs (attempts to convert ipv4 to ipv6)"),
+		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Output only valid IPv4 ip/cidrs (attempts to convert ipv6 to ipv4)"),
+		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Output only valid IPv6 ip/cidrs (attempts to convert ipv4 to ipv6)"),
 	)
 
 	_ = flagSet.Parse()
@@ -141,8 +146,18 @@ func (options *Options) validateOptions() error {
 		return errors.New("Can sort only in one direction!")
 	}
 
-	if options.IP4 && options.IP6 {
+	hasIpFilters := options.FilterIP4 || options.FilterIP6
+	if options.FilterIP4 && options.FilterIP6 {
 		return errors.New("IP4 and IP6 can't be used together")
+	}
+
+	shouldConvertIPs := options.ToIP4 || options.ToIP6
+	if options.ToIP4 && options.ToIP6 {
+		return errors.New("IP4 and IP6 can't be converted together")
+	}
+
+	if hasIpFilters && shouldConvertIPs {
+		return errors.New("IPs filtering and conversion can't be used together")
 	}
 
 	return nil
@@ -244,7 +259,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		_, bits := pCidr.Mask.Size()
 		isCidr4 := bits == mapcidr.DefaultMaskSize4
 		isCidr6 := bits > mapcidr.DefaultMaskSize4
-		isWrongIpType := (options.IP4 && isCidr6) || (options.IP6 && isCidr4)
+		isWrongIpType := (options.FilterIP4 && isCidr6) || (options.FilterIP6 && isCidr4)
 		if isWrongIpType {
 			continue
 		}
@@ -368,14 +383,28 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		ipnet := net.ParseIP(ip)
 		// check if we only need to filter/convert ips
 		switch {
-		case options.IP4:
+		case options.FilterIP4:
 			if mapcidr.IsIPv4(ipnet) {
 				outputchan <- ipnet.To4().String()
 			}
-		case options.IP6:
+		case options.FilterIP6:
 			// consider it as ip4 if it can be converted to it
 			if mapcidr.IsIPv6(ipnet) && !mapcidr.IsIPv4(ipnet) {
 				outputchan <- ipnet.To16().String()
+			}
+		case options.ToIP4:
+			if ip4 := ipnet.To4(); ip4 != nil {
+				outputchan <- ip4.String()
+			}
+		case options.ToIP6:
+			if ip6 := ipnet.To16(); ip6 != nil {
+				// check if it's ip4-mapped-ip6
+				_, bits := ip6.DefaultMask().Size()
+				if bits == 32 {
+					outputchan <- fmt.Sprintf("00:00:00:00:00:ffff:%02x%02x:%02x%02x", ip6[12], ip6[13], ip6[14], ip6[15])
+				} else {
+					outputchan <- ip6.String()
+				}
 			}
 		case ranger.Contains(ip):
 			outputchan <- ip
