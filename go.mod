@@ -8,7 +8,7 @@ require (
 	github.com/projectdiscovery/goflags v0.0.7
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/ipranger v0.0.2
-	github.com/stretchr/testify v1.7.0
+	github.com/stretchr/testify v1.7.1
 )
 
 require (
