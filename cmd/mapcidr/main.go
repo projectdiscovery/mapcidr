@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"net"
 	"os"
 	"sort"
@@ -27,6 +28,7 @@ type Options struct {
 	Cidr            string
 	FileCidr        string
 	Silent          bool
+	Verbose         bool
 	Version         bool
 	Output          string
 	Aggregate       bool
@@ -38,6 +40,10 @@ type Options struct {
 	SortAscending   bool
 	SortDescending  bool
 	Count           bool
+	FilterIP4       bool
+	FilterIP6       bool
+	ToIP4           bool
+	ToIP6           bool
 }
 
 const banner = `
@@ -66,33 +72,46 @@ func ParseOptions() *Options {
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`mapCIDR is developed to ease load distribution for mass scanning operations, it can be used both as a library and as independent CLI tool.`)
 
-	//input
-	createGroup(flagSet, "input", "Input",
+	// Input
+	flagSet.CreateGroup("input", "Input",
 		flagSet.StringVar(&options.Cidr, "cidr", "", "CIDR to process"),
 		flagSet.StringVarP(&options.FileCidr, "list", "l", "", "File containing list of CIDRs to process"),
 		flagSet.StringVarP(&options.FileIps, "ip-list", "il", "", "File containing list of IPs to process"),
 	)
 
-	//Process
-	createGroup(flagSet, "process", "Process",
+	// Process
+	flagSet.CreateGroup("process", "Process",
 		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice CIDRs by given CIDR count"),
 		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice CIDRs by given HOST count"),
-		flagSet.BoolVarP(&options.AggregateApprox, "aggregate-approx", "agg-approx", false, "Aggregate input with sparse IPs/CIDRs in the minimum set of approximated subnets"),
-		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate IPs/CIDRs into the minimum subnet"),
-		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of hosts in given CIDR"),
-		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs/CIDRs in ascending order"),
-		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs/CIDRs in descending order"),
-		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "si", false, "Shuffle input ip"),
-		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle input ip:port"),
+		flagSet.BoolVarP(&options.Aggregate, "aggregate", "a", false, "Aggregate IPs/CIDRs into minimum subnet"),
+		flagSet.BoolVarP(&options.AggregateApprox, "aggregate-approx", "aa", false, "Aggregate sparse IPs/CIDRs into minimum approximated subnet"),
+		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of IPs in given CIDR"),
+		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Convert IPs to IPv4 format (ipv4|ipv4-mapped-ipv6 => ipv4 format, ipv6 => warning)"),
+		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Convert IPs to IPv6 format (ipv6 => ipv6 format, ipv4-mapped-ipv6 => ipv4-mapped-ipv6, ipv4 => ipv4-mapped-ipv6|warning)"),
 	)
 
-	//output
-	createGroup(flagSet, "output", "Output",
-		flagSet.StringVarP(&options.Output, "output", "o", "", "File to write output to"),
-		flagSet.BoolVar(&options.Silent, "silent", false, "Silent mode"),
-		flagSet.BoolVar(&options.Version, "version", false, "Show version"),
+	// Filter
+	flagSet.CreateGroup("filter", "Filter",
+		flagSet.BoolVarP(&options.FilterIP4, "filter-ipv4", "f4", false, "Filter IPv4 IPs from input (filtered: ipv6|ipv4-mapped-ipv6, output: ipv4 format)"),
+		flagSet.BoolVarP(&options.FilterIP6, "filter-ipv6", "f6", false, "Filter IPv6 IPs from input (filtered: ipv6, output: ipv6 format)"),
 		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base IPs (ending in .0) in output"),
 		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast IPs (ending in .255) in output"),
+	)
+
+	// Miscellaneous
+	flagSet.CreateGroup("miscellaneous", "Miscellaneous",
+		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs/CIDRs in ascending order"),
+		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs/CIDRs in descending order"),
+		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "si", false, "Shuffle Input IPs in random order"),
+		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle Input IP:Port in random order"),
+	)
+
+	// Output
+	flagSet.CreateGroup("output", "Output",
+		flagSet.BoolVar(&options.Verbose, "verbose", false, "Verbose mode"),
+		flagSet.StringVarP(&options.Output, "output", "o", "", "File to write output to"),
+		flagSet.BoolVar(&options.Silent, "silent", false, "Silent mode"),
+		flagSet.BoolVar(&options.Version, "version", false, "Show version of the project"),
 	)
 
 	_ = flagSet.Parse()
@@ -112,33 +131,47 @@ func ParseOptions() *Options {
 		options.Shuffle = true
 	}
 
-	options.validateOptions()
+	if err := options.validateOptions(); err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
+	}
 
 	return options
 }
 
-func (options *Options) validateOptions() {
+func (options *Options) validateOptions() error {
 	if options.Cidr == "" && !fileutil.HasStdin() && options.FileCidr == "" && options.FileIps == "" {
-		gologger.Fatal().Msgf("No input provided!\n")
+		return errors.New("No input provided!")
 	}
 
 	if options.Slices > 0 && options.HostCount > 0 {
-		gologger.Fatal().Msgf("sbc and sbh cant be used together!\n")
+		return errors.New("sbc and sbh cant be used together!")
 	}
 
 	if options.Cidr != "" && options.FileCidr != "" {
-		gologger.Fatal().Msgf("CIDR and List input cant be used together!\n")
+		return errors.New("CIDR and List input cant be used together!")
 	}
 
 	if options.SortAscending && options.SortDescending {
-		gologger.Fatal().Msgf("Can sort only in one direction!\n")
+		return errors.New("Can sort only in one direction!")
 	}
+
+	if options.FilterIP4 && options.FilterIP6 {
+		return errors.New("IP4 and IP6 can't be used together")
+	}
+
+	if options.ToIP4 && options.ToIP6 {
+		return errors.New("IP4 and IP6 can't be converted together")
+	}
+
+	return nil
 }
 
 // configureOutput configures the output on the screen
 func (options *Options) configureOutput() {
 	if options.Silent {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelSilent)
+	} else if options.Verbose {
+		gologger.DefaultLogger.SetMaxLevel(levels.LevelWarning)
 	}
 }
 
@@ -213,13 +246,27 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 
 	for cidr := range chancidr {
 		// if it's an ip turn it into a cidr
-		if net.ParseIP(cidr) != nil {
-			cidr += "/32"
+		if ip := net.ParseIP(cidr); ip != nil {
+			switch {
+			case ip.To4() != nil:
+				cidr += "/32"
+			case ip.To16() != nil:
+				cidr += "/128"
+			}
 		}
 
 		// test if we have a cidr
 		if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
+		}
+
+		// filters ip4|ip6, by default do not filter
+		_, bits := pCidr.Mask.Size()
+		isCidr4 := bits == mapcidr.DefaultMaskSize4
+		isCidr6 := bits > mapcidr.DefaultMaskSize4
+		isWrongIpType := (options.FilterIP4 && isCidr6) || (options.FilterIP6 && isCidr4)
+		if isWrongIpType {
+			continue
 		}
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
@@ -338,7 +385,42 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 
 	// Process all ips if any
 	for ip := range chanips {
-		if ranger.Contains(ip) {
+		ipnet := net.ParseIP(ip)
+		// We assume that ips are expressed in the canonical octet dot|semicolon separated format
+		isIPv4 := mapcidr.IsIPv4(ipnet) && strings.Contains(ip, ".")
+		isIPv6 := mapcidr.IsIPv6(ipnet) && strings.Contains(ip, ":")
+		// filter
+		switch {
+		case options.FilterIP4 && isIPv6:
+			continue
+		case options.FilterIP6 && isIPv4:
+			continue
+		}
+
+		// convert or check if contained in range
+		switch {
+		case options.ToIP4:
+			if ip4 := ipnet.To4(); ip4 != nil {
+				outputchan <- ip4.String()
+			} else {
+				gologger.Warning().Msgf("%s is not IPv4 mapped IPv6\n", ip)
+			}
+		case options.ToIP6:
+			if ip6 := ipnet.To16(); ip6 != nil {
+				// check if it's ip4-mapped-ip6
+				if ipnet.To4() != nil {
+					outputchan <- mapcidr.FmtIP4MappedIP6(ip6)
+				} else {
+					outputchan <- ip6.String()
+				}
+			} else {
+				gologger.Warning().Msgf("%s could not be mapped to IPv6\n", ip)
+			}
+		case ranger.Len() > 0:
+			if ranger.Contains(ip) {
+				outputchan <- ip
+			}
+		default:
 			outputchan <- ip
 		}
 	}
@@ -373,12 +455,5 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		if f != nil {
 			_, _ = f.WriteString(o + "\n")
 		}
-	}
-}
-
-func createGroup(flagSet *goflags.FlagSet, groupName, description string, flags ...*goflags.FlagData) {
-	flagSet.SetGroup(groupName, description)
-	for _, currentFlag := range flags {
-		currentFlag.Group(groupName)
 	}
 }

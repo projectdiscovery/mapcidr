@@ -61,18 +61,31 @@ INPUT:
    -il, -ip-list string  File containing list of IPs to process
 
 PROCESS:
-   -sbc int                   Slice CIDRs by given CIDR count
-   -sbh int                   Slice CIDRs by given HOST count
-   -agg, -aggregate           Aggregate IPs/CIDRs into the minimum subnet
-   -sip, -shuffle-ip          Shuffle input ip
-   -sp, -shuffle-port string  Shuffle input ip:port
+   -sbc int                Slice CIDRs by given CIDR count
+   -sbh int                Slice CIDRs by given HOST count
+   -a, -aggregate          Aggregate IPs/CIDRs into minimum subnet
+   -aa, -aggregate-approx  Aggregate sparse IPs/CIDRs into minimum approximated subnet
+   -c, -count              Count number of IPs in given CIDR
+   -t4, -to-ipv4           Convert IPv4 mapped IPv6 IPs to IPv4 format)
+   -t6, -to-ipv6           Convert IPv4 IPs to IPv6 expanded format
+
+FILTER:
+   -f4, -filter-ipv4  Filter IPv4 IPs from input
+   -f6, -filter-ipv6  Filter IPv6 IPs from input
+   -skip-base         Skip base IPs (ending in .0) in output
+   -skip-broadcast    Skip broadcast IPs (ending in .255) in output
+
+MISCELLANEOUS:
+   -s, -sort                  Sort input IPs/CIDRs in ascending order
+   -sr, -sort-reverse         Sort input IPs/CIDRs in descending order
+   -si, -shuffle-ip           Shuffle Input IPs in random order
+   -sp, -shuffle-port string  Shuffle Input IP:Port in random order
 
 OUTPUT:
+   -verbose            Verbose mode
    -o, -output string  File to write output to
    -silent             Silent mode
-   -version            Show version
-   -skip-base          Skip base IPs (ending in .0) in output
-   -skip-broadcast     Skip broadcast IPs (ending in .255) in output
+   -version            Show version of the project
 ```
 
 # Running mapCIDR
@@ -182,6 +195,14 @@ In order to filter IPs from the given list of CIDR ranges, use the following com
 
 ```console
 mapcidr -ips ip-list.txt -l cirds.txt
+```
+
+### IPS filtering and conversions
+
+IPv4|IPv6 addresses can be filtered from an input list with `-f4` and `-f6` flags. They can be converted using `-t4` and `-t6` to ipv4 and ipv6 respectively.
+
+```console
+mapcidr -il ip.txt -t4 -t6 -verbose # filters ipv4 addresses then attempt to convert to ipv6
 ```
 
 # Use mapCIDR as a library

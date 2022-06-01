@@ -46,6 +46,7 @@ func CountIPsInCIDRs(includeBase, includeBroadcast bool, ipnets ...*net.IPNet) *
 }
 
 var (
+	DefaultMaskSize4 = 32
 	// v4Mappedv6Prefix is the RFC2765 IPv4-mapped address prefix.
 	v4Mappedv6Prefix  = []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0xff, 0xff}
 	ipv4LeadingZeroes = []byte{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0}
@@ -173,24 +174,6 @@ PreLoop:
 
 	return allowCIDRs, nil
 }
-
-// func getNetworkPrefix(ipNet *net.IPNet) *net.IP {
-// 	var mask net.IP
-
-// 	if ipNet.IP.To4() == nil {
-// 		mask = make(net.IP, net.IPv6len)
-// 		for i := 0; i < len(ipNet.Mask); i++ {
-// 			mask[net.IPv6len-i-1] = ipNet.IP[net.IPv6len-i-1] & ^ipNet.Mask[i]
-// 		}
-// 	} else {
-// 		mask = make(net.IP, net.IPv4len)
-// 		for i := 0; i < net.IPv4len; i++ {
-// 			mask[net.IPv4len-i-1] = ipNet.IP[net.IPv6len-i-1] & ^ipNet.Mask[i]
-// 		}
-// 	}
-
-// 	return &mask
-// }
 
 func removeCIDR(allowCIDR, removeCIDR *net.IPNet) ([]*net.IPNet, error) {
 	var allowIsIpv4, removeIsIpv4 bool
@@ -815,6 +798,11 @@ func IsIPv4(ip net.IP) bool {
 	return ip.To4() != nil
 }
 
+// IsIPv4 returns true if the given IP is an IPv6
+func IsIPv6(ip net.IP) bool {
+	return ip.To16() != nil
+}
+
 // Inet_ntoa convert uint to net.IP
 func Inet_ntoa(ipnr int64) net.IP { //nolint
 	var b [4]byte
@@ -843,4 +831,39 @@ func Inet_aton(ipnr net.IP) int64 { //nolint
 	sum += int64(b3)
 
 	return sum
+}
+
+// ToIP6 converts an IP to IP6
+func ToIP6(host string) (string, error) {
+	ip := net.ParseIP(host)
+	switch {
+	default:
+		return "", ParseIPError
+	case ip == nil:
+		return "", ParseIPError
+	case ip.To16() != nil:
+		return host, nil
+	case ip.To4() != nil:
+		return ip.To16().String(), nil
+	}
+}
+
+// ToIP6 converts an IP to IP4
+func ToIP4(host string) (string, error) {
+	ip := net.ParseIP(host)
+	switch {
+	default:
+		return "", ParseIPError
+	case ip == nil:
+		return "", ParseIPError
+	case ip.To4() != nil:
+		return host, nil
+	case ip.To16() != nil:
+		return ip.To4().String(), nil
+	}
+}
+
+// FmtIP4MappedIP6 prints an ip4-mapped as ip6 with ip6 format
+func FmtIP4MappedIP6(ip6 net.IP) string {
+	return fmt.Sprintf("00:00:00:00:00:ffff:%02x%02x:%02x%02x", ip6[12], ip6[13], ip6[14], ip6[15])
 }
