@@ -83,26 +83,34 @@ func ParseOptions() *Options {
 	flagSet.CreateGroup("process", "Process",
 		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice CIDRs by given CIDR count"),
 		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice CIDRs by given HOST count"),
-		flagSet.BoolVarP(&options.AggregateApprox, "aggregate-approx", "agg-approx", false, "Aggregate input with sparse IPs/CIDRs in the minimum set of approximated subnets"),
-		flagSet.BoolVarP(&options.Aggregate, "aggregate", "agg", false, "Aggregate IPs/CIDRs into the minimum subnet"),
-		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of hosts in given CIDR"),
+		flagSet.BoolVarP(&options.Aggregate, "aggregate", "a", false, "Aggregate IPs/CIDRs into minimum subnet"),
+		flagSet.BoolVarP(&options.AggregateApprox, "aggregate-approx", "aa", false, "Aggregate sparse IPs/CIDRs into minimum approximated subnet"),
+		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of IPs in given CIDR"),
+		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Convert IPv4 mapped IPv6 IPs to IPv4 format)"),
+		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Convert IPv4 IPs to IPv6 expanded format"),
+	)
+
+	// Filter
+	flagSet.CreateGroup("filter", "Filter",
+		flagSet.BoolVarP(&options.FilterIP4, "filter-ipv4", "f4", false, "Filter IPv4 IPs from input"),
+		flagSet.BoolVarP(&options.FilterIP6, "filter-ipv6", "f6", false, "Filter IPv6 IPs from input"),
+		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base IPs (ending in .0) in output"),
+		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast IPs (ending in .255) in output"),
+	)
+
+	// Miscellaneous
+	flagSet.CreateGroup("miscellaneous", "Miscellaneous",
 		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs/CIDRs in ascending order"),
 		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs/CIDRs in descending order"),
-		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "si", false, "Shuffle input ip"),
-		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle input ip:port"),
+		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "si", false, "Shuffle Input IPs in random order"),
+		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle Input IP:Port in random order"),
 	)
 
 	// Output
 	flagSet.CreateGroup("output", "Output",
 		flagSet.StringVarP(&options.Output, "output", "o", "", "File to write output to"),
 		flagSet.BoolVar(&options.Silent, "silent", false, "Silent mode"),
-		flagSet.BoolVar(&options.Version, "version", false, "Show version"),
-		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base IPs (ending in .0) in output"),
-		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast IPs (ending in .255) in output"),
-		flagSet.BoolVarP(&options.FilterIP4, "ipv4", "v4", false, "Output only valid IPv4 ip/cidrs (attempts to convert ipv6 to ipv4)"),
-		flagSet.BoolVarP(&options.FilterIP6, "ipv6", "v6", false, "Output only valid IPv6 ip/cidrs (attempts to convert ipv4 to ipv6)"),
-		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Output only valid IPv4 ip/cidrs (attempts to convert ipv6 to ipv4)"),
-		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Output only valid IPv6 ip/cidrs (attempts to convert ipv4 to ipv6)"),
+		flagSet.BoolVar(&options.Version, "version", false, "Show version of the project"),
 	)
 
 	_ = flagSet.Parse()
