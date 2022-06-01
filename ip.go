@@ -862,3 +862,8 @@ func ToIP4(host string) (string, error) {
 		return ip.To4().String(), nil
 	}
 }
+
+// FmtIP4MappedIP6 prints an ip4-mapped as ip6 with ip6 format
+func FmtIP4MappedIP6(ip6 net.IP) string {
+	return fmt.Sprintf("00:00:00:00:00:ffff:%02x%02x:%02x%02x", ip6[12], ip6[13], ip6[14], ip6[15])
+}

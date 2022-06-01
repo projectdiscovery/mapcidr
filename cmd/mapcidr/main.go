@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"net"
 	"os"
 	"sort"
@@ -29,6 +28,7 @@ type Options struct {
 	Cidr            string
 	FileCidr        string
 	Silent          bool
+	Verbose         bool
 	Version         bool
 	Output          string
 	Aggregate       bool
@@ -108,6 +108,7 @@ func ParseOptions() *Options {
 
 	// Output
 	flagSet.CreateGroup("output", "Output",
+		flagSet.BoolVar(&options.Verbose, "verbose", false, "Verbose mode"),
 		flagSet.StringVarP(&options.Output, "output", "o", "", "File to write output to"),
 		flagSet.BoolVar(&options.Silent, "silent", false, "Silent mode"),
 		flagSet.BoolVar(&options.Version, "version", false, "Show version of the project"),
@@ -154,18 +155,12 @@ func (options *Options) validateOptions() error {
 		return errors.New("Can sort only in one direction!")
 	}
 
-	hasIpFilters := options.FilterIP4 || options.FilterIP6
 	if options.FilterIP4 && options.FilterIP6 {
 		return errors.New("IP4 and IP6 can't be used together")
 	}
 
-	shouldConvertIPs := options.ToIP4 || options.ToIP6
 	if options.ToIP4 && options.ToIP6 {
 		return errors.New("IP4 and IP6 can't be converted together")
-	}
-
-	if hasIpFilters && shouldConvertIPs {
-		return errors.New("IPs filtering and conversion can't be used together")
 	}
 
 	return nil
@@ -175,6 +170,8 @@ func (options *Options) validateOptions() error {
 func (options *Options) configureOutput() {
 	if options.Silent {
 		gologger.DefaultLogger.SetMaxLevel(levels.LevelSilent)
+	} else if options.Verbose {
+		gologger.DefaultLogger.SetMaxLevel(levels.LevelWarning)
 	}
 }
 
@@ -389,32 +386,40 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 	// Process all ips if any
 	for ip := range chanips {
 		ipnet := net.ParseIP(ip)
-		// check if we only need to filter/convert ips
+		isIPv4 := mapcidr.IsIPv4(ipnet)
+		isIPv6 := mapcidr.IsIPv6(ipnet)
+		// filter
 		switch {
-		case options.FilterIP4:
-			if mapcidr.IsIPv4(ipnet) {
-				outputchan <- ipnet.To4().String()
-			}
-		case options.FilterIP6:
-			// consider it as ip4 if it can be converted to it
-			if mapcidr.IsIPv6(ipnet) && !mapcidr.IsIPv4(ipnet) {
-				outputchan <- ipnet.To16().String()
-			}
+		case options.FilterIP4 && !isIPv4:
+			continue
+		case options.FilterIP6 && !isIPv6:
+			continue
+		}
+
+		// convert or check if contained in range
+		switch {
 		case options.ToIP4:
 			if ip4 := ipnet.To4(); ip4 != nil {
 				outputchan <- ip4.String()
+			} else {
+				gologger.Warning().Msgf("%s is not IPv4 mapped IPv6\n", ip)
 			}
 		case options.ToIP6:
 			if ip6 := ipnet.To16(); ip6 != nil {
 				// check if it's ip4-mapped-ip6
-				_, bits := ip6.DefaultMask().Size()
-				if bits == 32 {
-					outputchan <- fmt.Sprintf("00:00:00:00:00:ffff:%02x%02x:%02x%02x", ip6[12], ip6[13], ip6[14], ip6[15])
+				if ipnet.To4() != nil {
+					outputchan <- mapcidr.FmtIP4MappedIP6(ip6)
 				} else {
 					outputchan <- ip6.String()
 				}
+			} else {
+				gologger.Warning().Msgf("%s could not be mapped to IPv6\n", ip)
 			}
-		case ranger.Contains(ip):
+		case ranger.Len() > 0:
+			if ranger.Contains(ip) {
+				outputchan <- ip
+			}
+		default:
 			outputchan <- ip
 		}
 	}
