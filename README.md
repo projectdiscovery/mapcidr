@@ -197,6 +197,14 @@ In order to filter IPs from the given list of CIDR ranges, use the following com
 mapcidr -ips ip-list.txt -l cirds.txt
 ```
 
+### IPS filtering and conversions
+
+IPv4|IPv6 addresses can be filtered from an input list with `-f4` and `-f6` flags. They can be converted using `-t4` and `-t6` to ipv4 and ipv6 respectively.
+
+```console
+mapcidr -il ip.txt -t4 -t6 -verbose # filters ipv4 addresses then attempt to convert to ipv6
+```
+
 # Use mapCIDR as a library
 
 It's possible to use the library directly in your go programs. The following code snippets outline how to divide a cidr into subnets, and how to divide the same into subnets containing a certain number of hosts
