@@ -56,9 +56,8 @@ This will display help for the tool. Here are all the switches it supports.
 
 ```yaml
 INPUT:
-   -cidr string          CIDR to process
-   -l, -list string      File containing list of CIDRs to process
-   -il, -ip-list string  File containing list of IPs to process
+   -cidr, -cl string[]    CIDR/File containing list of CIDRs to process
+   -il, -ip string[]      IP/File containing list of IPs to process
 
 PROCESS:
    -sbc int                Slice CIDRs by given CIDR count
