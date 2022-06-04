@@ -22,11 +22,10 @@ import (
 
 // Options contains cli options
 type Options struct {
-	FileIps         string
+	FileIps         goflags.NormalizedStringSlice
 	Slices          int
 	HostCount       int
-	Cidr            string
-	FileCidr        string
+	FileCidr        goflags.NormalizedStringSlice
 	Silent          bool
 	Verbose         bool
 	Version         bool
@@ -74,11 +73,9 @@ func ParseOptions() *Options {
 
 	// Input
 	flagSet.CreateGroup("input", "Input",
-		flagSet.StringVar(&options.Cidr, "cidr", "", "CIDR to process"),
-		flagSet.StringVarP(&options.FileCidr, "list", "l", "", "File containing list of CIDRs to process"),
-		flagSet.StringVarP(&options.FileIps, "ip-list", "il", "", "File containing list of IPs to process"),
+		flagSet.NormalizedStringSliceVarP(&options.FileCidr, "cidr", "cl", []string{}, "CIDR/File containing list of CIDRs to process"),
+		flagSet.NormalizedStringSliceVarP(&options.FileIps, "ip", "il", []string{}, "IP/File containing list of IPs to process"),
 	)
-
 	// Process
 	flagSet.CreateGroup("process", "Process",
 		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice CIDRs by given CIDR count"),
@@ -139,20 +136,16 @@ func ParseOptions() *Options {
 }
 
 func (options *Options) validateOptions() error {
-	if options.Cidr == "" && !fileutil.HasStdin() && options.FileCidr == "" && options.FileIps == "" {
-		return errors.New("No input provided!")
+	if options.FileCidr == nil && !fileutil.HasStdin() && options.FileCidr == nil && options.FileIps == nil {
+		return errors.New("no input provided")
 	}
 
 	if options.Slices > 0 && options.HostCount > 0 {
-		return errors.New("sbc and sbh cant be used together!")
-	}
-
-	if options.Cidr != "" && options.FileCidr != "" {
-		return errors.New("CIDR and List input cant be used together!")
+		return errors.New("sbc and sbh can't be used together")
 	}
 
 	if options.SortAscending && options.SortDescending {
-		return errors.New("Can sort only in one direction!")
+		return errors.New("can sort only in one direction")
 	}
 
 	if options.FilterIP4 && options.FilterIP6 {
@@ -189,10 +182,6 @@ func main() {
 	wg.Add(1)
 	go output(&wg, outputchan)
 
-	if options.Cidr != "" {
-		chancidr <- options.Cidr
-	}
-
 	if fileutil.HasStdin() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
@@ -200,30 +189,48 @@ func main() {
 		}
 	}
 
-	if options.FileCidr != "" {
-		file, err := os.Open(options.FileCidr)
-		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
-		}
-		defer file.Close() //nolint
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			chancidr <- scanner.Text()
+	if options.FileCidr != nil {
+		for _, item := range options.FileCidr {
+			if fileutil.FileExists(item) {
+				file, err := os.Open(item)
+				if err != nil {
+					gologger.Fatal().Msgf("%s\n", err)
+				}
+				defer file.Close() //nolint
+				scanner := bufio.NewScanner(file)
+				for scanner.Scan() {
+					text := strings.TrimSpace(scanner.Text())
+					if text != "" {
+						chancidr <- text
+					}
+				}
+			} else {
+				chancidr <- item
+			}
 		}
 	}
 
 	close(chancidr)
 
 	// Start to process ips list
-	if options.FileIps != "" {
-		file, err := os.Open(options.FileIps)
-		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
-		}
-		defer file.Close() //nolint
-		scanner := bufio.NewScanner(file)
-		for scanner.Scan() {
-			chanips <- scanner.Text()
+	if options.FileIps != nil {
+		for _, item := range options.FileIps {
+			if fileutil.FileExists(item) {
+				file, err := os.Open(item)
+				if err != nil {
+					gologger.Fatal().Msgf("%s\n", err)
+				}
+				defer file.Close() //nolint
+				scanner := bufio.NewScanner(file)
+				for scanner.Scan() {
+					text := strings.TrimSpace(scanner.Text())
+					if text != "" {
+						chanips <- text
+					}
+				}
+			} else {
+				chanips <- item
+			}
 		}
 	}
 
@@ -270,7 +277,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		}
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate || options.FileIps != "" || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+		if options.Aggregate || options.FileIps != nil || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
 			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else if options.Slices > 0 {
@@ -336,7 +343,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 	}
 
 	if hasSort {
-		if options.FileIps != "" {
+		if options.FileIps != nil {
 			var ips []net.IP
 			for ip := range chanips {
 				ips = append(ips, net.ParseIP(ip))
