@@ -49,12 +49,12 @@ const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v0.0.9
+/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.0.0
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const Version = `v0.0.9`
+const Version = `v1.0.0`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
@@ -83,14 +83,14 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Aggregate, "aggregate", "a", false, "Aggregate IPs/CIDRs into minimum subnet"),
 		flagSet.BoolVarP(&options.AggregateApprox, "aggregate-approx", "aa", false, "Aggregate sparse IPs/CIDRs into minimum approximated subnet"),
 		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of IPs in given CIDR"),
-		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Convert IPs to IPv4 format (ipv4|ipv4-mapped-ipv6 => ipv4 format, ipv6 => warning)"),
-		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Convert IPs to IPv6 format (ipv6 => ipv6 format, ipv4-mapped-ipv6 => ipv4-mapped-ipv6, ipv4 => ipv4-mapped-ipv6|warning)"),
+		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Convert IPs to IPv4 format"),
+		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Convert IPs to IPv6 format"),
 	)
 
 	// Filter
 	flagSet.CreateGroup("filter", "Filter",
-		flagSet.BoolVarP(&options.FilterIP4, "filter-ipv4", "f4", false, "Filter IPv4 IPs from input (filtered: ipv6|ipv4-mapped-ipv6, output: ipv4 format)"),
-		flagSet.BoolVarP(&options.FilterIP6, "filter-ipv6", "f6", false, "Filter IPv6 IPs from input (filtered: ipv6, output: ipv6 format)"),
+		flagSet.BoolVarP(&options.FilterIP4, "filter-ipv4", "f4", false, "Filter IPv4 IPs from input"),
+		flagSet.BoolVarP(&options.FilterIP6, "filter-ipv6", "f6", false, "Filter IPv6 IPs from input"),
 		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base IPs (ending in .0) in output"),
 		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast IPs (ending in .255) in output"),
 	)
