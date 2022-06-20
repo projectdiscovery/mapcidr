@@ -18,14 +18,15 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
+	"github.com/projectdiscovery/sliceutil"
 )
 
 // Options contains cli options
 type Options struct {
-	FileIps         goflags.NormalizedStringSlice
+	FileIps         goflags.StringSlice
 	Slices          int
 	HostCount       int
-	FileCidr        goflags.NormalizedStringSlice
+	FileCidr        goflags.StringSlice
 	Silent          bool
 	Verbose         bool
 	Version         bool
@@ -43,6 +44,7 @@ type Options struct {
 	FilterIP6       bool
 	ToIP4           bool
 	ToIP6           bool
+	IPFormats       goflags.StringSlice
 }
 
 const banner = `
@@ -73,9 +75,10 @@ func ParseOptions() *Options {
 
 	// Input
 	flagSet.CreateGroup("input", "Input",
-		flagSet.NormalizedStringSliceVarP(&options.FileCidr, "cidr", "cl", []string{}, "CIDR/File containing list of CIDRs to process"),
-		flagSet.NormalizedStringSliceVarP(&options.FileIps, "ip", "il", []string{}, "IP/File containing list of IPs to process"),
+		flagSet.StringSliceVarP(&options.FileCidr, "cidr", "cl", nil, "CIDR/File containing list of CIDRs to process", goflags.NormalizedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.FileIps, "ip", "il", nil, "IP/File containing list of IPs to process", goflags.NormalizedStringSliceOptions),
 	)
+
 	// Process
 	flagSet.CreateGroup("process", "Process",
 		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice CIDRs by given CIDR count"),
@@ -85,6 +88,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of IPs in given CIDR"),
 		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Convert IPs to IPv4 format"),
 		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Convert IPs to IPv6 format"),
+		flagSet.StringSliceVarP(&options.IPFormats, "if", "ip-format", nil, "IP formats (0 => all, 1 => dotted decimal, 2 => octal, 3 => hex,4 => dword, 5 => binary, 6 => mixed, 7 => ip6, 8 => url encoded)", goflags.NormalizedStringSliceOptions),
 	)
 
 	// Filter
@@ -126,6 +130,11 @@ func ParseOptions() *Options {
 	// enable shuffling if ports are specified
 	if len(options.ShufflePorts) > 0 {
 		options.Shuffle = true
+	}
+
+	// enable all ip encodings if "0" is specified
+	if sliceutil.Contains(options.IPFormats, "0") {
+		options.IPFormats = []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
 	}
 
 	if err := options.validateOptions(); err != nil {
@@ -458,9 +467,19 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 			continue
 		}
 
-		gologger.Silent().Msgf("%s\n", o)
+		if len(options.IPFormats) > 0 {
+			outputItems(f, mapcidr.AlterIP(o, options.IPFormats)...)
+		} else {
+			outputItems(f, o)
+		}
+	}
+}
+
+func outputItems(f *os.File, items ...string) {
+	for _, item := range items {
+		gologger.Silent().Msgf("%s\n", item)
 		if f != nil {
-			_, _ = f.WriteString(o + "\n")
+			_, _ = f.WriteString(item + "\n")
 		}
 	}
 }

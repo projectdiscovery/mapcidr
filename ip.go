@@ -5,9 +5,11 @@ package mapcidr
 import (
 	"bytes"
 	"encoding/binary"
+	"encoding/hex"
 	"fmt"
 	"math/big"
 	"net"
+	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -866,4 +868,105 @@ func ToIP4(host string) (string, error) {
 // FmtIP4MappedIP6 prints an ip4-mapped as ip6 with ip6 format
 func FmtIP4MappedIP6(ip6 net.IP) string {
 	return fmt.Sprintf("00:00:00:00:00:ffff:%02x%02x:%02x%02x", ip6[12], ip6[13], ip6[14], ip6[15])
+}
+
+func IncrementalPad(ip net.IP, padding int) []string {
+	parts := strings.Split(ip.String(), ".")
+	var ips []string
+	for p1 := 0; p1 < padding; p1++ {
+		for p2 := 0; p2 < padding; p2++ {
+			for p3 := 0; p3 < padding; p3++ {
+				for p4 := 0; p4 < padding; p4++ {
+					var format bytes.Buffer
+					format.WriteString("%#0" + fmt.Sprint(p1) + "s")
+					format.WriteString(".%#0" + fmt.Sprint(p2) + "s")
+					format.WriteString(".%#0" + fmt.Sprint(p3) + "s")
+					format.WriteString(".%#0" + fmt.Sprint(p4) + "s")
+					alteredIP := fmt.Sprintf(format.String(), parts[0], parts[1], parts[2], parts[3])
+					ips = append(ips, alteredIP)
+				}
+			}
+		}
+	}
+	return ips
+}
+
+func AlterIP(ip string, formats []string) []string {
+	var alteredIPs []string
+
+	for _, format := range formats {
+		standardIP := net.ParseIP(ip)
+		switch format {
+		case "1":
+			// Dotted-decimal notation
+			// standard formatting x.x.x.x or xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx:xxxx
+			alteredIPs = append(alteredIPs, standardIP.String())
+		case "2":
+			// 0-optimized dotted-decimal notation
+			// the 0 value segments of an IP address can be ommitted (eg. 127.0.0.1 => 127.0)
+			// regex for zeroes with dot 0000.
+			var reZeroesWithDot = regexp.MustCompile(`(?m)[0]+\.`)
+			// regex for .0000
+			var reDotWithZeroes = regexp.MustCompile(`(?m)\.[0^]+$`)
+			// suppress 0000.
+			alteredIP := reZeroesWithDot.ReplaceAllString(standardIP.String(), "")
+			// suppress .0000
+			alteredIP = reDotWithZeroes.ReplaceAllString(alteredIP, "")
+			alteredIPs = append(alteredIPs, alteredIP)
+		case "3":
+			// Octal notation (leading zeroes are required):
+			// eg: 127.0.0.1 => 0177.0.0.01
+			alteredIP := fmt.Sprintf("%#04o.%#o.%#o.%#o", standardIP[12], standardIP[13], standardIP[14], standardIP[15])
+			alteredIPs = append(alteredIPs, alteredIP)
+		case "4":
+			// Hexadecimal notation
+			// 127.0.0.1 => 0x7f.0x0.0x0.0x1
+			// 127.0.0.1 => 0x7f000001
+			// 127.0.0.1 => 0xaaaaaaaaaaaaaaaa7f000001 (random prefix)
+			alteredIPWithDots := fmt.Sprintf("%#x.%#x.%#x.%#x", standardIP[12], standardIP[13], standardIP[14], standardIP[15])
+			alteredIPWithZeroX := fmt.Sprintf("0x%s", hex.EncodeToString(standardIP[12:]))
+			alteredIPWithRandomPrefixHex, _ := RandomHex(5, standardIP[12:])
+			alteredIPWithRandomPrefix := fmt.Sprintf("0x%s", alteredIPWithRandomPrefixHex)
+			alteredIPs = append(alteredIPs, alteredIPWithDots, alteredIPWithZeroX, alteredIPWithRandomPrefix)
+		case "5":
+			// Decimal notation a.k.a dword notation
+			// 127.0.0.1 => 2130706433
+			bigIP, _, _ := IPToInteger(standardIP)
+			alteredIPs = append(alteredIPs, bigIP.String())
+		case "6":
+			// Binary notation#
+			// 127.0.0.1 => 01111111000000000000000000000001
+			// converts to int
+			bigIP, _, _ := IPToInteger(standardIP)
+			// then to binary
+			alteredIP := fmt.Sprintf("%b", bigIP)
+			alteredIPs = append(alteredIPs, alteredIP)
+		case "7":
+			// Mixed notation
+			// Ipv4 only
+			alteredIP := fmt.Sprintf("%#x.%d.%#o.%#x", standardIP[12], standardIP[13], standardIP[14], standardIP[15])
+			alteredIPs = append(alteredIPs, alteredIP)
+		case "8":
+			// IPv6 format
+			// 0000000000000:0000:0000:0000:0000:00000000000000:0000:1 => ::1
+			// 0000:0000:0000:0000:0000:0000:0000:0001 => ::1
+			// 0:0:0:0:0:0:0:1 => ::1
+			// 0:0:0:0::0:0:1 => ::1
+			// The standard library already applies zero compression + suppression
+			alteredIPs = append(alteredIPs, standardIP.String())
+		case "9":
+			// URL-encoded IP address
+			// 127.0.0.1 => %31%32%37%2E%30%2E%30%2E%31
+			// ::1 => %3A%3A%31
+			alteredIP := escape(ip)
+			alteredIPs = append(alteredIPs, alteredIP)
+		case "10":
+			// 0-Padding - prepend a random amount of zeroes to the ip parts
+			// 127.0.0.1 => 0127.00.00.01
+			// IPv4 only
+			alteredIPs = append(alteredIPs, IncrementalPad(standardIP, 5)...)
+		}
+	}
+
+	return alteredIPs
 }
