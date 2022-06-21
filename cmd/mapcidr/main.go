@@ -188,7 +188,7 @@ func main() {
 	if fileutil.HasStdin() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			options.FileCidr.Set(scanner.Text())
+		_ = options.FileCidr.Set(scanner.Text())
 		}
 	}
 	if options.FileCidr != nil {
