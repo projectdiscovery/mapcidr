@@ -74,7 +74,7 @@ func ParseOptions() *Options {
 
 	// Input
 	flagSet.CreateGroup("input", "Input",
-		flagSet.FileNormalizedStringSliceVarP(&options.FileCidr, "cidr", "cl", []string{}, "CIDR/File containing list of CIDRs to process"),
+		flagSet.FileNormalizedStringSliceVarP(&options.FileCidr, "cidr", "cl", []string{}, "CIDR/IP/File containing list of CIDR/IP to process"),
 	)
 	// Process
 	flagSet.CreateGroup("process", "Process",
