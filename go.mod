@@ -10,7 +10,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/ipranger v0.0.2
 	github.com/projectdiscovery/sliceutil v0.0.0-20220617151003-15892688e1d6
-	github.com/stretchr/testify v1.7.2
+	github.com/stretchr/testify v1.7.5
 )
 
 require (
