@@ -90,7 +90,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of IPs in given CIDR"),
 		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Convert IPs to IPv4 format"),
 		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Convert IPs to IPv6 format"),
-		flagSet.StringSliceVarP(&options.IPFormats, "if", "ip-format", nil, "IP formats (0 => all, 1 => dotted decimal, 2 => 0-optimized dotted-decimal notation, 3 => octal, 4 => hex, 5 => dword, 6 => binary, 7 => mixed, 8 => ip6, 9 => url encoded, 10 => 0-Padding)", goflags.NormalizedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.IPFormats, "if", "ip-format", nil, "IP formats (0 => all, 1 => dotted decimal, 2 => 0-optimized dotted-decimal notation, 3 => octal, 4 => hex, 5 => dword, 6 => binary, 7 => mixed, 8 => ip6, 9 => url encoded, 10 => 0-Padding, 11 => ip-overflow)", goflags.NormalizedStringSliceOptions),
 		flagSet.IntVarP(&options.ZeroPadNumberOfZeroes, "zero-pad-n", "zpn", 3, "number of padded zero to use"),
 		flagSet.BoolVarP(&options.ZeroPadPermute, "zero-pad-permute", "zpp", false, "enable permutations from 0 to zero-pad-n for each octets"),
 	)

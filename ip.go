@@ -6,6 +6,7 @@ import (
 	"bytes"
 	"encoding/binary"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"net"
@@ -13,6 +14,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"github.com/projectdiscovery/stringsutil"
 )
 
 const (
@@ -1004,8 +1007,38 @@ func AlterIP(ip string, formats []string, zeroPadN int, zeroPadPermutation bool)
 			} else {
 				alteredIPs = append(alteredIPs, FixedPad(standardIP, zeroPadN))
 			}
+		case "11":
+			// Ip Overflow - Attempts to express the ip as overflow of the last octect
+			// 127.0.1.0 => 127.0.256
+			// IPv4 only
+			alteredIP, err := overflowLastOctect(standardIP)
+			if err == nil {
+				alteredIPs = append(alteredIPs, alteredIP)
+			}
 		}
 	}
 
 	return alteredIPs
+}
+
+// overflowLastOctect squeeze together the last two octects into one
+func overflowLastOctect(ip net.IP) (string, error) {
+	parts := stringsutil.SplitAny(ip.String(), ".")
+	if len(parts) != 4 {
+		return "", errors.New("invalid ipv4")
+	}
+	part2, err := strconv.Atoi(parts[2])
+	if err != nil {
+		return "", err
+	}
+	part3, err := strconv.Atoi(parts[3])
+	if err != nil {
+		return "", err
+	}
+	if part3 == 0 {
+		part3 = 255
+	} else {
+		return "", errors.New("can't convert to overflow ip")
+	}
+	return fmt.Sprintf("%s.%s.%d", parts[0], parts[1], part2+part3), nil
 }
