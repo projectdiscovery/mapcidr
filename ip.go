@@ -870,6 +870,36 @@ func FmtIP4MappedIP6(ip6 net.IP) string {
 	return fmt.Sprintf("00:00:00:00:00:ffff:%02x%02x:%02x%02x", ip6[12], ip6[13], ip6[14], ip6[15])
 }
 
+func FmtIP4MappedIP6Short(ip6 net.IP) string {
+	return fmt.Sprintf("::ffff:%02x%02x:%02x%02x", ip6[12], ip6[13], ip6[14], ip6[15])
+}
+
+func FmtIp6(ip net.IP, short bool) (string, error) {
+	// check if it's ip6
+	if ip6 := ip.To16(); ip6 != nil {
+		// check if it's ip4, then return ip4-mapped-ip6
+		if ip.To4() != nil {
+			if short {
+				return FmtIP4MappedIP6Short(ip6), nil
+			}
+			return FmtIP4MappedIP6(ip6), nil
+		}
+		// otherwise return ip6 directly
+		return ip6.String(), nil
+	}
+	return "", fmt.Errorf("%s can't be expressed as ipv6", ip.String())
+}
+
+func FixedPad(ip net.IP, padding int) string {
+	parts := strings.Split(ip.String(), ".")
+	var format bytes.Buffer
+	format.WriteString("%#0" + fmt.Sprint(padding) + "s")
+	format.WriteString(".%#0" + fmt.Sprint(padding) + "s")
+	format.WriteString(".%#0" + fmt.Sprint(padding) + "s")
+	format.WriteString(".%#0" + fmt.Sprint(padding) + "s")
+	return fmt.Sprintf(format.String(), parts[0], parts[1], parts[2], parts[3])
+}
+
 func IncrementalPad(ip net.IP, padding int) []string {
 	parts := strings.Split(ip.String(), ".")
 	var ips []string
@@ -891,7 +921,7 @@ func IncrementalPad(ip net.IP, padding int) []string {
 	return ips
 }
 
-func AlterIP(ip string, formats []string) []string {
+func AlterIP(ip string, formats []string, zeroPadN int, zeroPadPermutation bool) []string {
 	var alteredIPs []string
 
 	for _, format := range formats {
@@ -903,7 +933,7 @@ func AlterIP(ip string, formats []string) []string {
 			alteredIPs = append(alteredIPs, standardIP.String())
 		case "2":
 			// 0-optimized dotted-decimal notation
-			// the 0 value segments of an IP address can be ommitted (eg. 127.0.0.1 => 127.0)
+			// the 0 value segments of an IP address can be ommitted (eg. 127.0.0.1 => 127.1)
 			// regex for zeroes with dot 0000.
 			var reZeroesWithDot = regexp.MustCompile(`(?m)[0]+\.`)
 			// regex for .0000
@@ -953,7 +983,12 @@ func AlterIP(ip string, formats []string) []string {
 			// 0:0:0:0:0:0:0:1 => ::1
 			// 0:0:0:0::0:0:1 => ::1
 			// The standard library already applies zero compression + suppression
-			alteredIPs = append(alteredIPs, standardIP.String())
+			// convert the ip to ip6 if possible, implicitly performs zero compression
+			// on native ipv6 addresses
+			ip6, err := FmtIp6(standardIP, true)
+			if err == nil {
+				alteredIPs = append(alteredIPs, ip6)
+			}
 		case "9":
 			// URL-encoded IP address
 			// 127.0.0.1 => %31%32%37%2E%30%2E%30%2E%31
@@ -964,7 +999,11 @@ func AlterIP(ip string, formats []string) []string {
 			// 0-Padding - prepend a random amount of zeroes to the ip parts
 			// 127.0.0.1 => 0127.00.00.01
 			// IPv4 only
-			alteredIPs = append(alteredIPs, IncrementalPad(standardIP, 5)...)
+			if zeroPadPermutation {
+				alteredIPs = append(alteredIPs, IncrementalPad(standardIP, zeroPadN)...)
+			} else {
+				alteredIPs = append(alteredIPs, FixedPad(standardIP, zeroPadN))
+			}
 		}
 	}
 

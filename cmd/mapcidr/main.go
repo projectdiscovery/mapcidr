@@ -23,28 +23,30 @@ import (
 
 // Options contains cli options
 type Options struct {
-	FileIps         goflags.StringSlice
-	Slices          int
-	HostCount       int
-	FileCidr        goflags.StringSlice
-	Silent          bool
-	Verbose         bool
-	Version         bool
-	Output          string
-	Aggregate       bool
-	Shuffle         bool
-	ShufflePorts    string
-	SkipBaseIP      bool
-	SkipBroadcastIP bool
-	AggregateApprox bool
-	SortAscending   bool
-	SortDescending  bool
-	Count           bool
-	FilterIP4       bool
-	FilterIP6       bool
-	ToIP4           bool
-	ToIP6           bool
-	IPFormats       goflags.StringSlice
+	FileIps               goflags.StringSlice
+	Slices                int
+	HostCount             int
+	FileCidr              goflags.StringSlice
+	Silent                bool
+	Verbose               bool
+	Version               bool
+	Output                string
+	Aggregate             bool
+	Shuffle               bool
+	ShufflePorts          string
+	SkipBaseIP            bool
+	SkipBroadcastIP       bool
+	AggregateApprox       bool
+	SortAscending         bool
+	SortDescending        bool
+	Count                 bool
+	FilterIP4             bool
+	FilterIP6             bool
+	ToIP4                 bool
+	ToIP6                 bool
+	IPFormats             goflags.StringSlice
+	ZeroPadNumberOfZeroes int
+	ZeroPadPermute        bool
 }
 
 const banner = `
@@ -88,7 +90,9 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of IPs in given CIDR"),
 		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Convert IPs to IPv4 format"),
 		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Convert IPs to IPv6 format"),
-		flagSet.StringSliceVarP(&options.IPFormats, "if", "ip-format", nil, "IP formats (0 => all, 1 => dotted decimal, 2 => octal, 3 => hex,4 => dword, 5 => binary, 6 => mixed, 7 => ip6, 8 => url encoded)", goflags.NormalizedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.IPFormats, "if", "ip-format", nil, "IP formats (0 => all, 1 => dotted decimal, 2 => 0-optimized dotted-decimal notation, 3 => octal, 4 => hex, 5 => dword, 6 => binary, 7 => mixed, 8 => ip6, 9 => url encoded, 10 => 0-Padding)", goflags.NormalizedStringSliceOptions),
+		flagSet.IntVarP(&options.ZeroPadNumberOfZeroes, "zero-pad-n", "zpn", 3, "number of padded zero to use"),
+		flagSet.BoolVarP(&options.ZeroPadPermute, "zero-pad-permute", "zpp", false, "enable permutations from 0 to zero-pad-n for each octets"),
 	)
 
 	// Filter
@@ -422,15 +426,11 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 				gologger.Warning().Msgf("%s is not IPv4 mapped IPv6\n", ip)
 			}
 		case options.ToIP6:
-			if ip6 := ipnet.To16(); ip6 != nil {
-				// check if it's ip4-mapped-ip6
-				if ipnet.To4() != nil {
-					outputchan <- mapcidr.FmtIP4MappedIP6(ip6)
-				} else {
-					outputchan <- ip6.String()
-				}
+			ip6, err := mapcidr.FmtIp6(ipnet, false)
+			if err == nil {
+				outputchan <- ip6
 			} else {
-				gologger.Warning().Msgf("%s could not be mapped to IPv6\n", ip)
+				gologger.Warning().Msgf("%s\n", err)
 			}
 		case ranger.Len() > 0:
 			if ranger.Contains(ip) {
@@ -468,7 +468,7 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		}
 
 		if len(options.IPFormats) > 0 {
-			outputItems(f, mapcidr.AlterIP(o, options.IPFormats)...)
+			outputItems(f, mapcidr.AlterIP(o, options.IPFormats, options.ZeroPadNumberOfZeroes, options.ZeroPadPermute)...)
 		} else {
 			outputItems(f, o)
 		}
