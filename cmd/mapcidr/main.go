@@ -18,32 +18,36 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
+	"github.com/projectdiscovery/sliceutil"
 )
 
 // Options contains cli options
 type Options struct {
-	Slices          int
-	HostCount       int
-	FileCidr        goflags.FileNormalizedStringSlice
-	Silent          bool
-	Verbose         bool
-	Version         bool
-	Output          string
-	Aggregate       bool
-	Shuffle         bool
-	ShufflePorts    string
-	SkipBaseIP      bool
-	SkipBroadcastIP bool
-	AggregateApprox bool
-	SortAscending   bool
-	SortDescending  bool
-	Count           bool
-	FilterIP4       bool
-	FilterIP6       bool
-	ToIP4           bool
-	ToIP6           bool
-	MatchIP         goflags.FileNormalizedStringSlice
-	FilterIP        goflags.FileNormalizedStringSlice
+	Slices                int
+	HostCount             int
+	FileCidr              goflags.StringSlice
+	Silent                bool
+	Verbose               bool
+	Version               bool
+	Output                string
+	Aggregate             bool
+	Shuffle               bool
+	ShufflePorts          string
+	SkipBaseIP            bool
+	SkipBroadcastIP       bool
+	AggregateApprox       bool
+	SortAscending         bool
+	SortDescending        bool
+	Count                 bool
+	FilterIP4             bool
+	FilterIP6             bool
+	ToIP4                 bool
+	ToIP6                 bool
+	MatchIP               goflags.StringSlice
+	FilterIP              goflags.StringSlice
+	IPFormats             goflags.StringSlice
+	ZeroPadNumberOfZeroes int
+	ZeroPadPermute        bool
 }
 
 const banner = `
@@ -74,8 +78,9 @@ func ParseOptions() *Options {
 
 	// Input
 	flagSet.CreateGroup("input", "Input",
-		flagSet.FileNormalizedStringSliceVarP(&options.FileCidr, "cidr", "cl", []string{}, "CIDR/IP/File containing list of CIDR/IP to process"),
+		flagSet.StringSliceVarP(&options.FileCidr, "cidr", "cl", nil, "CIDR/IP/File containing list of CIDR/IP to process", goflags.FileNormalizedStringSliceOptions),
 	)
+
 	// Process
 	flagSet.CreateGroup("process", "Process",
 		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice CIDRs by given CIDR count"),
@@ -85,6 +90,9 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of IPs in given CIDR"),
 		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Convert IPs to IPv4 format"),
 		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Convert IPs to IPv6 format"),
+		flagSet.StringSliceVarP(&options.IPFormats, "if", "ip-format", nil, "IP formats (0 => all, 1 => dotted decimal, 2 => 0-optimized dotted-decimal notation, 3 => octal, 4 => hex, 5 => dword, 6 => binary, 7 => mixed, 8 => ip6, 9 => url encoded, 10 => 0-Padding, 11 => ip-overflow)", goflags.NormalizedStringSliceOptions),
+		flagSet.IntVarP(&options.ZeroPadNumberOfZeroes, "zero-pad-n", "zpn", 3, "number of padded zero to use"),
+		flagSet.BoolVarP(&options.ZeroPadPermute, "zero-pad-permute", "zpp", false, "enable permutations from 0 to zero-pad-n for each octets"),
 	)
 
 	// Filter
@@ -93,8 +101,8 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.FilterIP6, "filter-ipv6", "f6", false, "Filter IPv6 IPs from input"),
 		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base IPs (ending in .0) in output"),
 		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast IPs (ending in .255) in output"),
-		flagSet.FileNormalizedStringSliceVarP(&options.MatchIP, "match-ip", "mi", []string{}, "IP/CIDR/FILE containing list of IP/CIDR to match (comma-separated, file input)"),
-		flagSet.FileNormalizedStringSliceVarP(&options.FilterIP, "filter-ip", "fi", []string{}, "IP/CIDR/FILE containing list of IP/CIDR to filter (comma-separated, file input)"),
+		flagSet.StringSliceVarP(&options.MatchIP, "match-ip", "mi", nil, "IP/CIDR/FILE containing list of IP/CIDR to match (comma-separated, file input)", goflags.FileNormalizedStringSliceOptions),
+		flagSet.StringSliceVarP(&options.FilterIP, "filter-ip", "fi", nil, "IP/CIDR/FILE containing list of IP/CIDR to filter (comma-separated, file input)", goflags.FileNormalizedStringSliceOptions),
 	)
 
 	// Miscellaneous
@@ -128,6 +136,11 @@ func ParseOptions() *Options {
 	// enable shuffling if ports are specified
 	if len(options.ShufflePorts) > 0 {
 		options.Shuffle = true
+	}
+
+	// enable all ip encodings if "0" is specified
+	if sliceutil.Contains(options.IPFormats, "0") {
+		options.IPFormats = []string{"1", "2", "3", "4", "5", "6", "7", "8", "9", "10"}
 	}
 
 	if err := options.validateOptions(); err != nil {
@@ -188,7 +201,7 @@ func main() {
 	if fileutil.HasStdin() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-		_ = options.FileCidr.Set(scanner.Text())
+			_ = options.FileCidr.Set(scanner.Text())
 		}
 	}
 	if options.FileCidr != nil {
@@ -423,9 +436,19 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 			continue
 		}
 
-		gologger.Silent().Msgf("%s\n", o)
+		if len(options.IPFormats) > 0 {
+			outputItems(f, mapcidr.AlterIP(o, options.IPFormats, options.ZeroPadNumberOfZeroes, options.ZeroPadPermute)...)
+		} else {
+			outputItems(f, o)
+		}
+	}
+}
+
+func outputItems(f *os.File, items ...string) {
+	for _, item := range items {
+		gologger.Silent().Msgf("%s\n", item)
 		if f != nil {
-			_, _ = f.WriteString(o + "\n")
+			_, _ = f.WriteString(item + "\n")
 		}
 	}
 }
