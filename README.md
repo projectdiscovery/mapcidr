@@ -61,7 +61,6 @@ This will display help for the tool. Here are all the switches it supports.
 ```yaml
 INPUT:
    -cl, -cidr string[]  CIDR/File containing list of CIDRs to process
-   -il, -ip string[]    IP/File containing list of IPs to process
 
 PROCESS:
    -sbc int                Slice CIDRs by given CIDR count
@@ -73,10 +72,12 @@ PROCESS:
    -t6, -to-ipv6           Convert IPs to IPv6 format
 
 FILTER:
-   -f4, -filter-ipv4  Filter IPv4 IPs from input
-   -f6, -filter-ipv6  Filter IPv6 IPs from input
-   -skip-base         Skip base IPs (ending in .0) in output
-   -skip-broadcast    Skip broadcast IPs (ending in .255) in output
+   -f4, -filter-ipv4          Filter IPv4 IPs from input
+   -f6, -filter-ipv6          Filter IPv6 IPs from input
+   -skip-base                 Skip base IPs (ending in .0) in output
+   -skip-broadcast            Skip broadcast IPs (ending in .255) in output
+   -mi, -match-ip string[]    IP/CIDR/FILE containing list of IP/CIDR to match (comma-separated, file input)
+   -fi, -filter-ip string[]   IP/CIDR/FILE containing list of IP/CIDR to filter (comma-separated, file input)
 
 MISCELLANEOUS:
    -s, -sort                  Sort input IPs/CIDRs in ascending order
