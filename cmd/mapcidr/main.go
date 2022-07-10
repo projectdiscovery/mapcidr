@@ -22,10 +22,9 @@ import (
 
 // Options contains cli options
 type Options struct {
-	FileIps         goflags.NormalizedStringSlice
 	Slices          int
 	HostCount       int
-	FileCidr        goflags.NormalizedStringSlice
+	FileCidr        goflags.FileNormalizedStringSlice
 	Silent          bool
 	Verbose         bool
 	Version         bool
@@ -43,6 +42,8 @@ type Options struct {
 	FilterIP6       bool
 	ToIP4           bool
 	ToIP6           bool
+	MatchIP         goflags.FileNormalizedStringSlice
+	FilterIP        goflags.FileNormalizedStringSlice
 }
 
 const banner = `
@@ -73,8 +74,7 @@ func ParseOptions() *Options {
 
 	// Input
 	flagSet.CreateGroup("input", "Input",
-		flagSet.NormalizedStringSliceVarP(&options.FileCidr, "cidr", "cl", []string{}, "CIDR/File containing list of CIDRs to process"),
-		flagSet.NormalizedStringSliceVarP(&options.FileIps, "ip", "il", []string{}, "IP/File containing list of IPs to process"),
+		flagSet.FileNormalizedStringSliceVarP(&options.FileCidr, "cidr", "cl", []string{}, "CIDR/IP/File containing list of CIDR/IP to process"),
 	)
 	// Process
 	flagSet.CreateGroup("process", "Process",
@@ -93,6 +93,8 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.FilterIP6, "filter-ipv6", "f6", false, "Filter IPv6 IPs from input"),
 		flagSet.BoolVar(&options.SkipBaseIP, "skip-base", false, "Skip base IPs (ending in .0) in output"),
 		flagSet.BoolVar(&options.SkipBroadcastIP, "skip-broadcast", false, "Skip broadcast IPs (ending in .255) in output"),
+		flagSet.FileNormalizedStringSliceVarP(&options.MatchIP, "match-ip", "mi", []string{}, "IP/CIDR/FILE containing list of IP/CIDR to match (comma-separated, file input)"),
+		flagSet.FileNormalizedStringSliceVarP(&options.FilterIP, "filter-ip", "fi", []string{}, "IP/CIDR/FILE containing list of IP/CIDR to filter (comma-separated, file input)"),
 	)
 
 	// Miscellaneous
@@ -136,7 +138,7 @@ func ParseOptions() *Options {
 }
 
 func (options *Options) validateOptions() error {
-	if options.FileCidr == nil && !fileutil.HasStdin() && options.FileCidr == nil && options.FileIps == nil {
+	if options.FileCidr == nil && !fileutil.HasStdin() {
 		return errors.New("no input provided")
 	}
 
@@ -155,7 +157,9 @@ func (options *Options) validateOptions() error {
 	if options.ToIP4 && options.ToIP6 {
 		return errors.New("IP4 and IP6 can't be converted together")
 	}
-
+	if options.FilterIP != nil && options.MatchIP != nil {
+		return errors.New("both match and filter mode specified")
+	}
 	return nil
 }
 
@@ -172,74 +176,96 @@ var options *Options
 
 func main() {
 	options = ParseOptions()
-	chanips := make(chan string)
 	chancidr := make(chan string)
 	outputchan := make(chan string)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
-	go process(&wg, chancidr, chanips, outputchan)
+	go process(&wg, chancidr, outputchan)
 	wg.Add(1)
 	go output(&wg, outputchan)
 
 	if fileutil.HasStdin() {
 		scanner := bufio.NewScanner(os.Stdin)
 		for scanner.Scan() {
-			chancidr <- scanner.Text()
+		_ = options.FileCidr.Set(scanner.Text())
 		}
 	}
-
 	if options.FileCidr != nil {
 		for _, item := range options.FileCidr {
-			if fileutil.FileExists(item) {
-				file, err := os.Open(item)
-				if err != nil {
-					gologger.Fatal().Msgf("%s\n", err)
-				}
-				defer file.Close() //nolint
-				scanner := bufio.NewScanner(file)
-				for scanner.Scan() {
-					text := strings.TrimSpace(scanner.Text())
-					if text != "" {
-						chancidr <- text
-					}
-				}
-			} else {
-				chancidr <- item
-			}
+			chancidr <- item
 		}
 	}
-
 	close(chancidr)
-
-	// Start to process ips list
-	if options.FileIps != nil {
-		for _, item := range options.FileIps {
-			if fileutil.FileExists(item) {
-				file, err := os.Open(item)
-				if err != nil {
-					gologger.Fatal().Msgf("%s\n", err)
-				}
-				defer file.Close() //nolint
-				scanner := bufio.NewScanner(file)
-				for scanner.Scan() {
-					text := strings.TrimSpace(scanner.Text())
-					if text != "" {
-						chanips <- text
-					}
-				}
-			} else {
-				chanips <- item
-			}
-		}
-	}
-
-	close(chanips)
-
 	wg.Wait()
 }
 
-func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
+func filterIPsFromFlagList(channel chan string, ip string, ipFlagList []string) {
+	if len(ipFlagList) == 0 {
+		sendToOutputChannel(ip, channel)
+		return
+	}
+	if options.MatchIP != nil {
+		for _, item := range ipFlagList {
+			if strings.EqualFold(ip, item) {
+				sendToOutputChannel(ip, channel)
+				break
+			}
+		}
+	} else if options.FilterIP != nil {
+		var contains = false
+		for _, item := range ipFlagList {
+			if ip == item {
+				contains = true
+			}
+		}
+		if !contains {
+			sendToOutputChannel(ip, channel)
+		}
+	} else {
+		sendToOutputChannel(ip, channel)
+	}
+}
+func sendToOutputChannel(ip string, channel chan string) {
+	ipnet := net.ParseIP(ip)
+	switch {
+	case options.ToIP4:
+		if ip4 := ipnet.To4(); ip4 != nil {
+			channel <- ip4.String()
+		} else {
+			channel <- ip
+		}
+	case options.ToIP6:
+		if ip6 := ipnet.To16(); ip6 != nil {
+			// check if it's ip4-mapped-ip6
+			if ipnet.To4() != nil {
+				channel <- mapcidr.FmtIP4MappedIP6(ip6)
+			} else {
+				channel <- ip6.String()
+			}
+		} else {
+			gologger.Warning().Msgf("%s could not be mapped to IPv6\n", ip)
+		}
+	default:
+		channel <- ip
+	}
+}
+func prepareIPsFromCidrFlagList(items []string) []string {
+	var flagIPList []string
+	for _, item := range items {
+		if _, pCidr, err := net.ParseCIDR(item); err == nil && pCidr != nil {
+			if ips, err := mapcidr.IPAddressesAsStream(pCidr.String()); err == nil {
+				for ip := range ips {
+					flagIPList = append(flagIPList, ip)
+				}
+			}
+		} else {
+			flagIPList = append(flagIPList, item)
+		}
+	}
+	return flagIPList
+}
+func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
 	var (
 		allCidrs []*net.IPNet
@@ -261,7 +287,6 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 				cidr += "/128"
 			}
 		}
-
 		// test if we have a cidr
 		if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
@@ -277,7 +302,7 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		}
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate || options.FileIps != nil || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
 			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else if options.Slices > 0 {
@@ -297,12 +322,15 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 				outputchan <- subnet.String()
 			}
 		} else {
+			var ipFlagList []string
+			ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.MatchIP)...)
+			ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.FilterIP)...)
 			ips, err := mapcidr.IPAddressesAsStream(cidr)
 			if err != nil {
 				gologger.Fatal().Msgf("%s\n", err)
 			}
 			for ip := range ips {
-				outputchan <- ip
+				filterIPsFromFlagList(outputchan, ip, ipFlagList)
 			}
 		}
 	}
@@ -343,37 +371,17 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 	}
 
 	if hasSort {
-		if options.FileIps != nil {
-			var ips []net.IP
-			for ip := range chanips {
-				ips = append(ips, net.ParseIP(ip))
-			}
-			if options.SortDescending {
-				sort.Slice(ips, func(i, j int) bool {
-					return bytes.Compare(ips[j], ips[i]) < 0
-				})
-			} else {
-				sort.Slice(ips, func(i, j int) bool {
-					return bytes.Compare(ips[i], ips[j]) < 0
-				})
-			}
-
-			for _, ip := range ips {
-				outputchan <- ip.String()
-			}
+		if options.SortDescending {
+			sort.Slice(allCidrs, func(i, j int) bool {
+				return bytes.Compare(allCidrs[j].IP, allCidrs[i].IP) < 0
+			})
 		} else {
-			if options.SortDescending {
-				sort.Slice(allCidrs, func(i, j int) bool {
-					return bytes.Compare(allCidrs[j].IP, allCidrs[i].IP) < 0
-				})
-			} else {
-				sort.Slice(allCidrs, func(i, j int) bool {
-					return bytes.Compare(allCidrs[i].IP, allCidrs[j].IP) < 0
-				})
-			}
-			for _, cidr := range allCidrs {
-				outputchan <- cidr.String()
-			}
+			sort.Slice(allCidrs, func(i, j int) bool {
+				return bytes.Compare(allCidrs[i].IP, allCidrs[j].IP) < 0
+			})
+		}
+		for _, cidr := range allCidrs {
+			outputchan <- cidr.String()
 		}
 	}
 
@@ -389,49 +397,6 @@ func process(wg *sync.WaitGroup, chancidr, chanips, outputchan chan string) {
 		ipSum := mapcidr.CountIPsInCIDRs(includeBase, includeBroadcast, allCidrs...)
 		outputchan <- ipSum.String()
 	}
-
-	// Process all ips if any
-	for ip := range chanips {
-		ipnet := net.ParseIP(ip)
-		// We assume that ips are expressed in the canonical octet dot|semicolon separated format
-		isIPv4 := mapcidr.IsIPv4(ipnet) && strings.Contains(ip, ".")
-		isIPv6 := mapcidr.IsIPv6(ipnet) && strings.Contains(ip, ":")
-		// filter
-		switch {
-		case options.FilterIP4 && isIPv6:
-			continue
-		case options.FilterIP6 && isIPv4:
-			continue
-		}
-
-		// convert or check if contained in range
-		switch {
-		case options.ToIP4:
-			if ip4 := ipnet.To4(); ip4 != nil {
-				outputchan <- ip4.String()
-			} else {
-				gologger.Warning().Msgf("%s is not IPv4 mapped IPv6\n", ip)
-			}
-		case options.ToIP6:
-			if ip6 := ipnet.To16(); ip6 != nil {
-				// check if it's ip4-mapped-ip6
-				if ipnet.To4() != nil {
-					outputchan <- mapcidr.FmtIP4MappedIP6(ip6)
-				} else {
-					outputchan <- ip6.String()
-				}
-			} else {
-				gologger.Warning().Msgf("%s could not be mapped to IPv6\n", ip)
-			}
-		case ranger.Len() > 0:
-			if ranger.Contains(ip) {
-				outputchan <- ip
-			}
-		default:
-			outputchan <- ip
-		}
-	}
-
 	close(outputchan)
 }
 
