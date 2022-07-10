@@ -10,7 +10,8 @@ require (
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/ipranger v0.0.2
 	github.com/projectdiscovery/sliceutil v0.0.0-20220617151003-15892688e1d6
-	github.com/stretchr/testify v1.7.5
+	github.com/projectdiscovery/stringsutil v0.0.0-20220612082425-0037ce9f89f3
+	github.com/stretchr/testify v1.8.0
 )
 
 require (
@@ -27,7 +28,6 @@ require (
 	github.com/modern-go/reflect2 v1.0.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/hmap v0.0.1 // indirect
-	github.com/projectdiscovery/stringsutil v0.0.0-20220612082425-0037ce9f89f3 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
