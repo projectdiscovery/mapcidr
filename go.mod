@@ -9,7 +9,7 @@ require (
 	github.com/projectdiscovery/goflags v0.0.8-0.20220426153734-2ffbfbff923c
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/ipranger v0.0.2
-	github.com/stretchr/testify v1.7.5
+	github.com/stretchr/testify v1.8.0
 )
 
 require (
