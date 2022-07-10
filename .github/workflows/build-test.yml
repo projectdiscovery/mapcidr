@@ -18,10 +18,10 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v3
 
-      - name: Test
-        run: go test .
-        working-directory: cmd/mapcidr/
-
       - name: Build
         run: go build .
+        working-directory: cmd/mapcidr/
+
+      - name: Race Test
+        run: go run -race . -cidr 192.168.1.224/30
         working-directory: cmd/mapcidr/

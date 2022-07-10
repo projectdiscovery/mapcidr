@@ -10,7 +10,7 @@
 <p align="center">
 <a href="https://github.com/projectdiscovery/mapcidr/issues"><img src="https://img.shields.io/badge/contributions-welcome-brightgreen.svg?style=flat"></a>
 <a href="https://github.com/projectdiscovery/mapcidr/releases"><img src="https://img.shields.io/github/release/projectdiscovery/mapcidr"></a>
-<a href="https://twitter.com/pdiscovery"><img src="https://img.shields.io/twitter/follow/pdnuclei.svg?logo=twitter"></a>
+<a href="https://twitter.com/pdiscoveryio"><img src="https://img.shields.io/twitter/follow/pdiscoveryio.svg?logo=twitter"></a>
 <a href="https://discord.gg/projectdiscovery"><img src="https://img.shields.io/discord/695645237418131507.svg?logo=discord"></a>
 </p>
       
@@ -33,16 +33,17 @@ mapCIDR is developed to ease load distribution for mass scanning operations, it 
   <br>
 </h1>
 
- - CIDR expansion support (**default**)
- - CIDR slicing support (`sbh`, `sbc`)
- - CIDR/IP aggregation support (`a`, `aa`)
- - CIDR based IP filter support (`cidr`, `ip`)
- - CIDR/IP sorting support (`s`, `sr`)
- - CIDR host count support (`c`)
+ - **CIDR expansion** support (**default**)
+ - **CIDR slicing** support (`sbh`, `sbc`)
+ - **CIDR/IP aggregation** support (`a`, `aa`)
+ - **CIDR/IP matcher** support (`match-ip`)
+ - **CIDR/IP filter** support (`filter-ip`)
+ - **CIDR/IP sorting** support (`s`, `sr`)
+ - **CIDR host count** support (`count`)
+ - Multiple **IP Format** support (`ip-format`)
  - IP/PORT shuffling support (`si`, `sp`)
- - IPv4/IPv6 Conversation support (`t4`, `t6`)
- - IPv4/IPv6 Filter support (`f4`, `f6`)
- - CIDR STD IN/OUT support
+ - **IPv4/IPv6 Conversation** support (`t4`, `t6`)
+ - CIDR STDIN (pipe) input support
 
 # Installation
 
@@ -60,23 +61,27 @@ This will display help for the tool. Here are all the switches it supports.
 
 ```yaml
 INPUT:
-   -cl, -cidr string[]  CIDR/File containing list of CIDRs to process
-   -il, -ip string[]    IP/File containing list of IPs to process
+   -cl, -cidr string[]  CIDR/IP/File containing list of CIDR/IP to process
 
 PROCESS:
-   -sbc int                Slice CIDRs by given CIDR count
-   -sbh int                Slice CIDRs by given HOST count
-   -a, -aggregate          Aggregate IPs/CIDRs into minimum subnet
-   -aa, -aggregate-approx  Aggregate sparse IPs/CIDRs into minimum approximated subnet
-   -c, -count              Count number of IPs in given CIDR
-   -t4, -to-ipv4           Convert IPs to IPv4 format
-   -t6, -to-ipv6           Convert IPs to IPv6 format
+   -sbc int                  Slice CIDRs by given CIDR count
+   -sbh int                  Slice CIDRs by given HOST count
+   -a, -aggregate            Aggregate IPs/CIDRs into minimum subnet
+   -aa, -aggregate-approx    Aggregate sparse IPs/CIDRs into minimum approximated subnet
+   -c, -count                Count number of IPs in given CIDR
+   -t4, -to-ipv4             Convert IPs to IPv4 format
+   -t6, -to-ipv6             Convert IPs to IPv6 format
+   -ip-format, -if string[]  IP formats (0,1,2,3,4,5,6,7,8,9,10,11)
+   -zpn, -zero-pad-n int     number of padded zero to use (default 3)
+   -zpp, -zero-pad-permute   enable permutations from 0 to zero-pad-n for each octets
 
 FILTER:
-   -f4, -filter-ipv4  Filter IPv4 IPs from input
-   -f6, -filter-ipv6  Filter IPv6 IPs from input
-   -skip-base         Skip base IPs (ending in .0) in output
-   -skip-broadcast    Skip broadcast IPs (ending in .255) in output
+   -f4, -filter-ipv4         Filter IPv4 IPs from input
+   -f6, -filter-ipv6         Filter IPv6 IPs from input
+   -skip-base                Skip base IPs (ending in .0) in output
+   -skip-broadcast           Skip broadcast IPs (ending in .255) in output
+   -mi, -match-ip string[]   IP/CIDR/FILE containing list of IP/CIDR to match (comma-separated, file input)
+   -fi, -filter-ip string[]  IP/CIDR/FILE containing list of IP/CIDR to filter (comma-separated, file input)
 
 MISCELLANEOUS:
    -s, -sort                  Sort input IPs/CIDRs in ascending order
@@ -194,15 +199,45 @@ $ cat ips.txt | mapcidr -aggregate-approx
 1.1.1.0/27
 ```
 
-### CIDR based IP Filtering
+### Match / Filter IP's from CIDR
 
-In order to filter IPs from the given list of CIDR ranges, use the following command.
+In order to match IPs from the given list of CIDR ranges, use the following command.
 
 ```console
-$ mapcidr -il ip-list.txt -cl cirds.txt
+$ mapcidr -cidr 192.168.1.0/24 -mi 192.168.1.253,192.168.1.252
+$ mapcidr -cidr 192.168.1.0/24 -mi ip_list_to_match.txt
 ```
 
-### IPS Conversion
+In order to match IPs from the given list of CIDR ranges, use the following command.
+
+```console
+$ mapcidr -cidr 192.168.1.224/28 -fi 192.168.1.233,192.168.1.234
+$ mapcidr -cidr 192.168.1.224/28 -fi ip_list_to_filter.txt
+```
+
+### IP Formats
+
+In order to represent given IP into multiple formats, `-if 0` flag can be used to display all the supported format values, and specific type of format can be displayed using specific index number as listed [here](https://github.com/projectdiscovery/mapcidr/wiki/IP-Format-Index), currently [10 unique formats are supported](https://github.com/projectdiscovery/mapcidr/wiki/IP-Format-Index).
+
+```console
+$ echo 127.0.1.0 | mapcidr -if 0 -silent
+
+127.0.1.0
+127.1
+0177.0.01.0
+0x7f.0x0.0x1.0x0
+0x7f000100
+0xabfa659dfa7f000100
+281472812450048
+111111111111111101111111000000000000000100000000
+0x7f.0.01.0x0
+::ffff:7f00:0100
+%31%32%37%2E%30%2E%31%2E%30
+127.000.001.000
+```
+
+
+### IP Conversion
 
 **IPv4 | IPv6** addresses can be converted from either the v6 to v4 notation or IPv4-mapped notation into IPv4 addresses using `-t4` and `-t6` to IPv4 and IPv6 respectively.
 
@@ -214,7 +249,7 @@ $ cat ips.txt
 ```
 
 ```
-$ mapcidr -il ipv4-list.txt -t6
+$ mapcidr -cl ips.txt -t6
 
 00:00:00:00:00:ffff:0101:0101
 00:00:00:00:00:ffff:0202:0202
@@ -226,27 +261,10 @@ $ mapcidr -il ipv4-list.txt -t6
 <h3>Note:</h3>
 
 Not all IPv6 address can be converted to IPv4. You can only convert valid IPv4 represented IPv6 addresses.
+
 </td>
 </tr>
 </table>
-
-### IPS Filtering
-
-**IPv4 | IPv6** addresses can be filtered from an input list containing both IPv4/IPv6 formatted IPs using `-f4` and `-f6` flag.
-
-
-```console
-$ cat ips.txt 
-
-1.1.1.1
-00:00:00:00:00:ffff:ad00:5400
-```
-
-```console
-$ mapcidr -il ips.txt -f4
-
-1.1.1.1
-```
 
 ### CIDR Host Counting
 
