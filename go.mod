@@ -6,7 +6,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/blackrock v0.0.0-20210415162320-b38689ae3a2e
 	github.com/projectdiscovery/fileutil v0.0.0-20220609150212-453ac591c36c
-	github.com/projectdiscovery/goflags v0.0.8
+	github.com/projectdiscovery/goflags v0.0.9
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/ipranger v0.0.2
 	github.com/projectdiscovery/sliceutil v0.0.0-20220617151003-15892688e1d6

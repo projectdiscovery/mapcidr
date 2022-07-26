@@ -121,7 +121,9 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.Version, "version", false, "Show version of the project"),
 	)
 
-	_ = flagSet.Parse()
+	if err := flagSet.Parse(); err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
+	}
 
 	// Read the inputs and configure the logging
 	options.configureOutput()
