@@ -318,7 +318,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
-			_ = ranger.AddIPNet(pCidr)
+			_ = ranger.Add(cidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else if options.Slices > 0 {
 			subnets, err := mapcidr.SplitN(cidr, options.Slices)
