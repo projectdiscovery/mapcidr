@@ -473,7 +473,7 @@ func coalesceRanges(ranges []*netWithRange) []*net.IPNet {
 		} else {
 			// We have joined two ranges together, so we need to find the new CIDRs
 			// that represent this range.
-			rangeCIDRs := rangeToCIDRs(*netRange.First, *netRange.Last)
+			rangeCIDRs := RangeToCIDRs(*netRange.First, *netRange.Last)
 			coalescedCIDRs = append(coalescedCIDRs, rangeCIDRs...)
 		}
 	}
@@ -545,9 +545,9 @@ func AggregateApproxIPV4s(ips []*net.IPNet) (approxIPs []*net.IPNet) {
 	return approxIPs
 }
 
-// rangeToCIDRs converts the range of IPs covered by firstIP and lastIP to
+// RangeToCIDRs converts the range of IPs covered by firstIP and lastIP to
 // a list of CIDRs that contains all of the IPs covered by the range.
-func rangeToCIDRs(firstIP, lastIP net.IP) []*net.IPNet {
+func RangeToCIDRs(firstIP, lastIP net.IP) []*net.IPNet {
 	// First, create a CIDR that spans both IPs.
 	spanningCIDR := createSpanningCIDR(netWithRange{&firstIP, &lastIP, nil})
 	spanningRange := ipNetToRange(spanningCIDR)
