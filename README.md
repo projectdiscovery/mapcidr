@@ -183,6 +183,42 @@ In order to list CIDR blocks for given list of IPs, use the following command.
 $ mapcidr -il ips.txt -aggregate
 ```
 
+In order to list CIDR blocks for given IP Range (**IPv4 | IPv6**), use the following command.
+```
+ $ mapcidr  -cl 192.168.0.1-192.168.0.255 -aggregate 
+ OR
+ $ echo 192.168.0.1-192.168.0.255 | mapcidr -aggregate
+```
+```
+192.168.0.1/32
+192.168.0.2/31
+192.168.0.4/30
+192.168.0.8/29
+192.168.0.16/28
+192.168.0.32/27
+192.168.0.64/26
+192.168.0.128/25
+
+```
+
+It is also possible to pass the list of IP ranges. The final output will contain the CIDR prefixes of given ranges.
+```
+$ mapcidr -cl 192.168.0.1-192.168.0.255,2c0f:fec9::-2c0f:fed7:ffff:ffff:ffff:ffff:ffff:ffff  -aggregate
+```
+```
+192.168.0.1/32
+192.168.0.2/31
+192.168.0.4/30
+192.168.0.8/29
+192.168.0.16/28
+192.168.0.32/27
+192.168.0.64/26
+192.168.0.128/25
+2c0f:fec9::/32
+2c0f:feca::/31
+2c0f:fecc::/30
+2c0f:fed0::/29
+```
 It's also possible to perform approximated aggregations for sparse ips groups (only version 4). The final interval will contain contiguous ips not belonging to the input:
 
 ```console
@@ -275,6 +311,10 @@ $ echo 173.0.84.0/16 | mapcidr -count -silent
 
 65536
 ```
+
+### IP Range to CIDR Prefixes
+Accept first and last **IPv4 | IPv6** address and 
+
 
 # Use mapCIDR as a library
 

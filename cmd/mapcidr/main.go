@@ -387,13 +387,27 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 	// Aggregate all ips into the minimal subset possible
 	if options.Aggregate {
-		// Find out the possible CIDR ranges from given IP address range
-		if len(ipRange) > 0 {
-			cidrs := mapcidr.RangeToCIDRs(ipRange[0], ipRange[1])
-			for _, cidr := range cidrs {
-				outputchan <- cidr.String()
+		// Find out the possible CIDR prefixes from given IP address range
+		if options.CIDRFromIPRange {
+			// check if ipRange has more than 2 values
+			if len(ipRange)%2 == 1 {
+				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
+			}
+			for i := 0; i < len(ipRange)-1; i = i + 2 {
+				// check if range is valid or not
+				if bytes.Compare(ipRange[i], ipRange[i+1]) > 0 {
+					gologger.Fatal().Msgf("Start IP:%s must be less than End IP:%s", ipRange[i], ipRange[i+1])
+				}
+				cidrs := mapcidr.RangeToCIDRs(ipRange[i], ipRange[i+1])
+				sort.Slice(cidrs, func(i, j int) bool {
+					return bytes.Compare(cidrs[i].IP, cidrs[j].IP) < 0
+				})
+				for _, cidr := range cidrs {
+					outputchan <- cidr.String()
+				}
 			}
 		} else {
+
 			cCidrsIPV4, cCidrsIPV6 := mapcidr.CoalesceCIDRs(allCidrs)
 			for _, cidrIPV4 := range cCidrsIPV4 {
 				outputchan <- cidrIPV4.String()
