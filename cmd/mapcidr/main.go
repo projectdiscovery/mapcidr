@@ -393,19 +393,18 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 			if len(ipRange)%2 == 1 {
 				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
 			}
-			for i := 0; i < len(ipRange)-1; i = i + 2 {
-				// check if range is valid or not
-				if bytes.Compare(ipRange[i], ipRange[i+1]) > 0 {
-					gologger.Fatal().Msgf("Start IP:%s must be less than End IP:%s", ipRange[i], ipRange[i+1])
-				}
-				cidrs := mapcidr.RangeToCIDRs(ipRange[i], ipRange[i+1])
-				sort.Slice(cidrs, func(i, j int) bool {
-					return bytes.Compare(cidrs[i].IP, cidrs[j].IP) < 0
-				})
-				for _, cidr := range cidrs {
-					outputchan <- cidr.String()
-				}
+			// check if range is valid or not
+			if bytes.Compare(ipRange[0], ipRange[1]) > 0 {
+				gologger.Fatal().Msgf("Start IP:%s must be less than End IP:%s", ipRange[0], ipRange[1])
 			}
+			cidrs := mapcidr.RangeToCIDRs(ipRange[0], ipRange[1])
+			sort.Slice(cidrs, func(i, j int) bool {
+				return bytes.Compare(cidrs[i].IP, cidrs[j].IP) < 0
+			})
+			for _, cidr := range cidrs {
+				outputchan <- cidr.String()
+			}
+			options.CIDRFromIPRange = false
 		} else {
 
 			cCidrsIPV4, cCidrsIPV6 := mapcidr.CoalesceCIDRs(allCidrs)
