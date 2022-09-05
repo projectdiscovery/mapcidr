@@ -199,6 +199,23 @@ $ cat ips.txt | mapcidr -aggregate-approx
 1.1.1.0/27
 ```
 
+In order to list CIDR blocks for given IP Range (**IPv4 | IPv6**), use the following command.
+```
+ $ mapcidr  -cl 192.168.0.1-192.168.0.255 -aggregate 
+ OR
+ $ echo 192.168.0.1-192.168.0.255 | mapcidr -aggregate
+```
+```
+192.168.0.1/32
+192.168.0.2/31
+192.168.0.4/30
+192.168.0.8/29
+192.168.0.16/28
+192.168.0.32/27
+192.168.0.64/26
+192.168.0.128/25
+
+```
 ### Match / Filter IP's from CIDR
 
 In order to match IPs from the given list of CIDR ranges, use the following command.
@@ -275,6 +292,10 @@ $ echo 173.0.84.0/16 | mapcidr -count -silent
 
 65536
 ```
+
+### IP Range to CIDR Prefixes
+Accept first and last **IPv4 | IPv6** address and 
+
 
 # Use mapCIDR as a library
 

@@ -1042,3 +1042,19 @@ func overflowLastOctect(ip net.IP) (string, error) {
 	}
 	return fmt.Sprintf("%s.%s.%d", parts[0], parts[1], part2+part3), nil
 }
+
+/*
+The intent here is to get the CIDR range from the IP range.
+This function will return the sorted list of CIDR ranges.
+*/
+func GetCIDRFromIPRange(firstIP, lastIP net.IP) ([]*net.IPNet, error) {
+	// check if range is valid or not
+	if bytes.Compare(firstIP, lastIP) > 0 {
+		return nil, fmt.Errorf("start IP:%s must be less than End IP:%s", firstIP, lastIP)
+	}
+	cidrs := rangeToCIDRs(firstIP, lastIP)
+	sort.Slice(cidrs, func(i, j int) bool {
+		return bytes.Compare(cidrs[i].IP, cidrs[j].IP) < 0
+	})
+	return cidrs, nil
+}
