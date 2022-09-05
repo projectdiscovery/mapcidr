@@ -48,7 +48,7 @@ type Options struct {
 	IPFormats             goflags.StringSlice
 	ZeroPadNumberOfZeroes int
 	ZeroPadPermute        bool
-	CIDRFromIPRange       bool
+	IPRangeInput          bool
 }
 
 const banner = `
@@ -208,7 +208,7 @@ func main() {
 	if options.FileCidr != nil {
 		for _, item := range options.FileCidr {
 			if strings.Contains(item, "-") {
-				options.CIDRFromIPRange = true
+				options.IPRangeInput = true
 				for _, ip := range strings.Split(item, "-") {
 					chancidr <- ip
 				}
@@ -294,15 +294,13 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		ranger   *ipranger.IPRanger
 		err      error
 		hasSort  = options.SortAscending || options.SortDescending
-		ipRange  []net.IP
 	)
 
 	ranger, _ = ipranger.New()
 
 	for cidr := range chancidr {
 		// if it's an ip turn it into a cidr
-		var ip net.IP
-		if ip = net.ParseIP(cidr); ip != nil {
+		if ip := net.ParseIP(cidr); ip != nil {
 			switch {
 			case ip.To4() != nil:
 				cidr += "/32"
@@ -325,12 +323,9 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		}
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count || options.IPRangeInput {
 			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
-			if options.CIDRFromIPRange {
-				ipRange = append(ipRange, ip)
-			}
 		} else if options.Slices > 0 {
 			subnets, err := mapcidr.SplitN(cidr, options.Slices)
 			if err != nil {
@@ -361,6 +356,56 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		}
 	}
 
+	if options.IPRangeInput {
+		// check if ipRange has more than 2 values
+		if len(allCidrs) > 2 {
+			gologger.Fatal().Msgf("IP range can not have more than 2 values.")
+		}
+		firstIP := net.ParseIP(allCidrs[0].IP.String())
+		lastIP := net.ParseIP(allCidrs[1].IP.String())
+		cidrs, err := mapcidr.GetCIDRFromIPRange(firstIP, lastIP)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+
+		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+			allCidrs = append(allCidrs, cidrs...)
+		} else {
+			for _, cidr := range cidrs {
+				if options.Slices > 0 {
+					subnets, err := mapcidr.SplitN(cidr.String(), options.Slices)
+					if err != nil {
+						gologger.Fatal().Msgf("%s\n", err)
+					}
+					for _, subnet := range subnets {
+						outputchan <- subnet.String()
+					}
+				} else if options.HostCount > 0 {
+					subnets, err := mapcidr.SplitByNumber(cidr.String(), options.HostCount)
+					if err != nil {
+						gologger.Fatal().Msgf("%s\n", err)
+					}
+					for _, subnet := range subnets {
+						outputchan <- subnet.String()
+					}
+				} else {
+					var ipFlagList []string
+					ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.MatchIP)...)
+					ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.FilterIP)...)
+
+					ips, err := mapcidr.IPAddressesAsStream(cidr.String())
+					if err != nil {
+						gologger.Fatal().Msgf("%s\n", err)
+					}
+					for ip := range ips {
+						filterIPsFromFlagList(outputchan, ip, ipFlagList)
+					}
+				}
+			}
+
+		}
+	}
+
 	// Shuffle perform the aggregation
 	if options.Shuffle {
 		var ports []int
@@ -387,28 +432,13 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 	// Aggregate all ips into the minimal subset possible
 	if options.Aggregate {
-		// Find out the possible CIDR prefixes from given IP address range
-		if options.CIDRFromIPRange {
-			// check if ipRange has more than 2 values
-			if len(ipRange)%2 == 1 {
-				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
-			}
-			cidrs, err := mapcidr.GetCIDRFromIPRange(ipRange[0], ipRange[1])
-			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
-			}
-			for _, cidr := range cidrs {
-				outputchan <- cidr.String()
-			}
-		} else {
 
-			cCidrsIPV4, cCidrsIPV6 := mapcidr.CoalesceCIDRs(allCidrs)
-			for _, cidrIPV4 := range cCidrsIPV4 {
-				outputchan <- cidrIPV4.String()
-			}
-			for _, cidrIPV6 := range cCidrsIPV6 {
-				outputchan <- cidrIPV6.String()
-			}
+		cCidrsIPV4, cCidrsIPV6 := mapcidr.CoalesceCIDRs(allCidrs)
+		for _, cidrIPV4 := range cCidrsIPV4 {
+			outputchan <- cidrIPV4.String()
+		}
+		for _, cidrIPV6 := range cCidrsIPV6 {
+			outputchan <- cidrIPV6.String()
 		}
 	}
 
