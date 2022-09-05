@@ -1,11 +1,10 @@
 package mapcidr
 
 import (
-	"bytes"
 	"math/big"
 	"net"
 	"reflect"
-	"sort"
+	"strings"
 	"testing"
 
 	"github.com/projectdiscovery/sliceutil"
@@ -50,16 +49,18 @@ func TestIpEncodings(t *testing.T) {
 
 func TestRangeToCIDRs(t *testing.T) {
 	tests := []struct {
-		name    string
-		firstIP net.IP
-		lastIP  net.IP
-		want    []string
+		name          string
+		firstIP       net.IP
+		lastIP        net.IP
+		want          []string
+		expectedError string
 	}{
 		{
-			name:    "IP4SingleCIDR",
-			firstIP: net.ParseIP("192.168.0.0"),
-			lastIP:  net.ParseIP("192.168.0.255"),
-			want:    []string{"192.168.0.0/24"},
+			name:          "IP4SingleCIDR",
+			firstIP:       net.ParseIP("192.168.0.0"),
+			lastIP:        net.ParseIP("192.168.0.255"),
+			want:          []string{"192.168.0.0/24"},
+			expectedError: "",
 		},
 		{
 			name:    "IP4MultipleCIDR",
@@ -69,31 +70,39 @@ func TestRangeToCIDRs(t *testing.T) {
 				"192.168.0.4/30", "192.168.0.8/29",
 				"192.168.0.16/28", "192.168.0.32/27",
 				"192.168.0.64/26", "192.168.0.128/25"},
+			expectedError: "",
 		},
 		{
-			name:    "IP6RangeCIDR",
-			firstIP: net.ParseIP("2c0f:fec9::"),
-			lastIP:  net.ParseIP("2c0f:fed7:ffff:ffff:ffff:ffff:ffff:ffff"),
-			want:    []string{"2c0f:fec9::/32", "2c0f:feca::/31", "2c0f:fecc::/30", "2c0f:fed0::/29"},
+			name:          "IP6RangeCIDR",
+			firstIP:       net.ParseIP("2c0f:fec9::"),
+			lastIP:        net.ParseIP("2c0f:fed7:ffff:ffff:ffff:ffff:ffff:ffff"),
+			want:          []string{"2c0f:fec9::/32", "2c0f:feca::/31", "2c0f:fecc::/30", "2c0f:fed0::/29"},
+			expectedError: "",
+		},
+		{
+			name:          "wrongIPRange",
+			firstIP:       net.ParseIP("192.168.0.255"),
+			lastIP:        net.ParseIP("192.168.0.0"),
+			want:          []string{},
+			expectedError: "start IP:192.168.0.255 must be less than End IP:192.168.0.0",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			var cidrStringList []string
-			got := RangeToCIDRs(tt.firstIP, tt.lastIP)
-			sortTheCIDRs(got)
-			for _, item := range got {
-				cidrStringList = append(cidrStringList, item.String())
-			}
-			if !reflect.DeepEqual(cidrStringList, tt.want) {
-				t.Errorf("RangeToCIDRs() = %v, want %v", cidrStringList, tt.want)
+			got, err := GetCIDRFromIPRange(tt.firstIP, tt.lastIP)
+			if err != nil {
+				if !strings.Contains(err.Error(), tt.expectedError) {
+					t.Errorf("Expected %v Got %v", tt.expectedError, err)
+				}
+			} else {
+				for _, item := range got {
+					cidrStringList = append(cidrStringList, item.String())
+				}
+				if !reflect.DeepEqual(cidrStringList, tt.want) {
+					t.Errorf("RangeToCIDRs() = %v, want %v", cidrStringList, tt.want)
+				}
 			}
 		})
 	}
-}
-
-func sortTheCIDRs(allCidrs []*net.IPNet) {
-	sort.Slice(allCidrs, func(i, j int) bool {
-		return bytes.Compare(allCidrs[i].IP, allCidrs[j].IP) < 0
-	})
 }

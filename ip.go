@@ -473,7 +473,7 @@ func coalesceRanges(ranges []*netWithRange) []*net.IPNet {
 		} else {
 			// We have joined two ranges together, so we need to find the new CIDRs
 			// that represent this range.
-			rangeCIDRs := RangeToCIDRs(*netRange.First, *netRange.Last)
+			rangeCIDRs := rangeToCIDRs(*netRange.First, *netRange.Last)
 			coalescedCIDRs = append(coalescedCIDRs, rangeCIDRs...)
 		}
 	}
@@ -545,9 +545,9 @@ func AggregateApproxIPV4s(ips []*net.IPNet) (approxIPs []*net.IPNet) {
 	return approxIPs
 }
 
-// RangeToCIDRs converts the range of IPs covered by firstIP and lastIP to
+// rangeToCIDRs converts the range of IPs covered by firstIP and lastIP to
 // a list of CIDRs that contains all of the IPs covered by the range.
-func RangeToCIDRs(firstIP, lastIP net.IP) []*net.IPNet {
+func rangeToCIDRs(firstIP, lastIP net.IP) []*net.IPNet {
 	// First, create a CIDR that spans both IPs.
 	spanningCIDR := createSpanningCIDR(netWithRange{&firstIP, &lastIP, nil})
 	spanningRange := ipNetToRange(spanningCIDR)
@@ -1041,4 +1041,20 @@ func overflowLastOctect(ip net.IP) (string, error) {
 		return "", errors.New("can't convert to overflow ip")
 	}
 	return fmt.Sprintf("%s.%s.%d", parts[0], parts[1], part2+part3), nil
+}
+
+/*
+The intent here is to get the CIDR range from the IP range.
+This function will return the sorted list of CIDR ranges.
+*/
+func GetCIDRFromIPRange(firstIP, lastIP net.IP) ([]*net.IPNet, error) {
+	// check if range is valid or not
+	if bytes.Compare(firstIP, lastIP) > 0 {
+		return nil, fmt.Errorf("start IP:%s must be less than End IP:%s", firstIP, lastIP)
+	}
+	cidrs := rangeToCIDRs(firstIP, lastIP)
+	sort.Slice(cidrs, func(i, j int) bool {
+		return bytes.Compare(cidrs[i].IP, cidrs[j].IP) < 0
+	})
+	return cidrs, nil
 }
