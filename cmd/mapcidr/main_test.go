@@ -149,10 +149,10 @@ func TestProcess(t *testing.T) {
 			// get output list
 			wg.Add(1)
 			go func() {
+				defer wg.Done()
 				for output := range tt.outputchan {
 					outputlist = append(outputlist, output)
 				}
-				wg.Done()
 			}()
 
 			for _, item := range tt.options.FileCidr {
