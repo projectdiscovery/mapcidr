@@ -294,13 +294,15 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		ranger   *ipranger.IPRanger
 		err      error
 		hasSort  = options.SortAscending || options.SortDescending
+		ipRange  []net.IP
 	)
 
 	ranger, _ = ipranger.New()
 
 	for cidr := range chancidr {
 		// if it's an ip turn it into a cidr
-		if ip := net.ParseIP(cidr); ip != nil {
+		ip := net.ParseIP(cidr)
+		if ip != nil {
 			switch {
 			case ip.To4() != nil:
 				cidr += "/32"
@@ -322,88 +324,34 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 			continue
 		}
 
-		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count || options.IPRangeInput {
+		// Add IPs which are passed as input. Example - "192.168.0.0-192.168.0.5"
+		if options.IPRangeInput {
+			ipRange = append(ipRange, ip)
+		} else if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+			// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
-		} else if options.Slices > 0 {
-			subnets, err := mapcidr.SplitN(cidr, options.Slices)
-			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
-			}
-			for _, subnet := range subnets {
-				outputchan <- subnet.String()
-			}
-		} else if options.HostCount > 0 {
-			subnets, err := mapcidr.SplitByNumber(cidr, options.HostCount)
-			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
-			}
-			for _, subnet := range subnets {
-				outputchan <- subnet.String()
-			}
 		} else {
-			var ipFlagList []string
-			ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.MatchIP)...)
-			ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.FilterIP)...)
-			ips, err := mapcidr.IPAddressesAsStream(cidr)
-			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
-			}
-			for ip := range ips {
-				filterIPsFromFlagList(outputchan, ip, ipFlagList)
-			}
+			commonFunc(cidr, outputchan)
 		}
 	}
 
 	if options.IPRangeInput {
 		// check if ipRange has more than 2 values
-		if len(allCidrs) > 2 {
+		if len(ipRange) > 2 {
 			gologger.Fatal().Msgf("IP range can not have more than 2 values.")
 		}
-		firstIP := net.ParseIP(allCidrs[0].IP.String())
-		lastIP := net.ParseIP(allCidrs[1].IP.String())
-		cidrs, err := mapcidr.GetCIDRFromIPRange(firstIP, lastIP)
+		cidrs, err := mapcidr.GetCIDRFromIPRange(ipRange[0], ipRange[1])
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
 
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
-			allCidrs = allCidrs[:0]
 			allCidrs = append(allCidrs, cidrs...)
 		} else {
 			for _, cidr := range cidrs {
-				if options.Slices > 0 {
-					subnets, err := mapcidr.SplitN(cidr.String(), options.Slices)
-					if err != nil {
-						gologger.Fatal().Msgf("%s\n", err)
-					}
-					for _, subnet := range subnets {
-						outputchan <- subnet.String()
-					}
-				} else if options.HostCount > 0 {
-					subnets, err := mapcidr.SplitByNumber(cidr.String(), options.HostCount)
-					if err != nil {
-						gologger.Fatal().Msgf("%s\n", err)
-					}
-					for _, subnet := range subnets {
-						outputchan <- subnet.String()
-					}
-				} else {
-					var ipFlagList []string
-					ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.MatchIP)...)
-					ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.FilterIP)...)
-
-					ips, err := mapcidr.IPAddressesAsStream(cidr.String())
-					if err != nil {
-						gologger.Fatal().Msgf("%s\n", err)
-					}
-					for ip := range ips {
-						filterIPsFromFlagList(outputchan, ip, ipFlagList)
-					}
-				}
+				commonFunc(cidr.String(), outputchan)
 			}
-
 		}
 	}
 
@@ -471,6 +419,42 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		outputchan <- ipSum.String()
 	}
 	close(outputchan)
+}
+
+/*
+The purpose of the function is split into subnets or split by no. of host or CIDR expansion.
+This gives us benefit of DRY and we can add new features here going forward.
+*/
+func commonFunc(cidr string, outputchan chan string) {
+	if options.Slices > 0 {
+		subnets, err := mapcidr.SplitN(cidr, options.Slices)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		for _, subnet := range subnets {
+			outputchan <- subnet.String()
+		}
+	} else if options.HostCount > 0 {
+		subnets, err := mapcidr.SplitByNumber(cidr, options.HostCount)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		for _, subnet := range subnets {
+			outputchan <- subnet.String()
+		}
+	} else {
+		var ipFlagList []string
+		ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.MatchIP)...)
+		ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.FilterIP)...)
+
+		ips, err := mapcidr.IPAddressesAsStream(cidr)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		for ip := range ips {
+			filterIPsFromFlagList(outputchan, ip, ipFlagList)
+		}
+	}
 }
 
 func output(wg *sync.WaitGroup, outputchan chan string) {
