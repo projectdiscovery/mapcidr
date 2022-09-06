@@ -140,13 +140,14 @@ func TestProcess(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			wg.Add(2)
 			options = &tt.options
 
+			wg.Add(1)
 			go process(&wg, tt.chancidr, tt.outputchan)
 
 			var outputlist []string
 			// get output list
+			wg.Add(1)
 			go func() {
 				for output := range tt.outputchan {
 					outputlist = append(outputlist, output)
