@@ -130,6 +130,18 @@ mapcidr -cidr 173.0.84.0/24
 173.0.84.16
 ```
 
+It is also possible to get list of IP's for a given IP range, use the following command
+```console
+$ echo "192.168.0.0-192.168.0.5" | mapcidr
+```
+```console
+192.168.0.0
+192.168.0.1
+192.168.0.2
+192.168.0.3
+192.168.0.4
+192.168.0.5
+```
 ### CIDR Slicing by CIDR Count
 
 In order to slice given CIDR or list of CIDR by CIDR count or slice into multiple and equal smaller subnets, use the following command.
