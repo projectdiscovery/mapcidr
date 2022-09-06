@@ -369,6 +369,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		}
 
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+			allCidrs = allCidrs[:0]
 			allCidrs = append(allCidrs, cidrs...)
 		} else {
 			for _, cidr := range cidrs {
