@@ -295,6 +295,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 	for cidr := range chancidr {
 
+		// Add IPs into ipRangeMap which are passed as input. Example - "192.168.0.0-192.168.0.5"
 		if strings.Contains(cidr, "-") {
 			options.IPRangeInput = true
 			var ipRange []net.IP
@@ -332,9 +333,8 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 			continue
 		}
 
-		// Add IPs which are passed as input. Example - "192.168.0.0-192.168.0.5"
+		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
-			// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else {
@@ -384,7 +384,6 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 	// Aggregate all ips into the minimal subset possible
 	if options.Aggregate {
-
 		cCidrsIPV4, cCidrsIPV6 := mapcidr.CoalesceCIDRs(allCidrs)
 		for _, cidrIPV4 := range cCidrsIPV4 {
 			outputchan <- cidrIPV4.String()

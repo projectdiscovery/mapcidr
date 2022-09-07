@@ -213,7 +213,7 @@ $ cat ips.txt | mapcidr -aggregate-approx
 
 In order to list CIDR blocks for given IP Range (**IPv4 | IPv6**), use the following command.
 ```
- $ mapcidr  -cl 192.168.0.1-192.168.0.255 -aggregate 
+ $ mapcidr  -cl 192.168.0.1-192.168.0.255 -aggregate
  OR
  $ echo 192.168.0.1-192.168.0.255 | mapcidr -aggregate
 ```
