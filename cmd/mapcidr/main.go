@@ -207,14 +207,7 @@ func main() {
 	}
 	if options.FileCidr != nil {
 		for _, item := range options.FileCidr {
-			if strings.Contains(item, "-") {
-				options.IPRangeInput = true
-				for _, ip := range strings.Split(item, "-") {
-					chancidr <- ip
-				}
-			} else {
-				chancidr <- item
-			}
+			chancidr <- item
 		}
 	}
 	close(chancidr)
@@ -289,20 +282,34 @@ func prepareIPsFromCidrFlagList(items []string) []string {
 func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
 	var (
-		allCidrs []*net.IPNet
-		pCidr    *net.IPNet
-		ranger   *ipranger.IPRanger
-		err      error
-		hasSort  = options.SortAscending || options.SortDescending
-		ipRange  []net.IP
+		allCidrs    []*net.IPNet
+		pCidr       *net.IPNet
+		ranger      *ipranger.IPRanger
+		err         error
+		hasSort     = options.SortAscending || options.SortDescending
+		ipRangeList = make([][]net.IP, 0)
 	)
 
 	ranger, _ = ipranger.New()
 
 	for cidr := range chancidr {
+
+		// Add IPs into ipRangeMap which are passed as input. Example - "192.168.0.0-192.168.0.5"
+		if strings.Contains(cidr, "-") {
+			options.IPRangeInput = true
+			var ipRange []net.IP
+			for _, ipstr := range strings.Split(cidr, "-") {
+				ipRange = append(ipRange, net.ParseIP(ipstr))
+			}
+			//check if ipRange has more than 2 values
+			if len(ipRange)%2 == 1 {
+				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
+			}
+			ipRangeList = append(ipRangeList, ipRange)
+			continue
+		}
 		// if it's an ip turn it into a cidr
-		ip := net.ParseIP(cidr)
-		if ip != nil {
+		if ip := net.ParseIP(cidr); ip != nil {
 			switch {
 			case ip.To4() != nil:
 				cidr += "/32"
@@ -324,33 +331,27 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 			continue
 		}
 
-		// Add IPs which are passed as input. Example - "192.168.0.0-192.168.0.5"
-		if options.IPRangeInput {
-			ipRange = append(ipRange, ip)
-		} else if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
-			// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
+		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
+		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
 			_ = ranger.AddIPNet(pCidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else {
 			commonFunc(cidr, outputchan)
 		}
 	}
-
 	if options.IPRangeInput {
-		// check if ipRange has more than 2 values
-		if len(ipRange) > 2 {
-			gologger.Fatal().Msgf("IP range can not have more than 2 values.")
-		}
-		cidrs, err := mapcidr.GetCIDRFromIPRange(ipRange[0], ipRange[1])
-		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
-		}
+		for _, ipRange := range ipRangeList {
 
-		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
-			allCidrs = append(allCidrs, cidrs...)
-		} else {
-			for _, cidr := range cidrs {
-				commonFunc(cidr.String(), outputchan)
+			cidrs, err := mapcidr.GetCIDRFromIPRange(ipRange[0], ipRange[1])
+			if err != nil {
+				gologger.Fatal().Msgf("%s\n", err)
+			}
+			if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+				allCidrs = append(allCidrs, cidrs...)
+			} else {
+				for _, cidr := range cidrs {
+					commonFunc(cidr.String(), outputchan)
+				}
 			}
 		}
 	}
@@ -381,7 +382,6 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 	// Aggregate all ips into the minimal subset possible
 	if options.Aggregate {
-
 		cCidrsIPV4, cCidrsIPV6 := mapcidr.CoalesceCIDRs(allCidrs)
 		for _, cidrIPV4 := range cCidrsIPV4 {
 			outputchan <- cidrIPV4.String()

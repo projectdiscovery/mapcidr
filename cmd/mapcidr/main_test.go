@@ -71,8 +71,7 @@ func TestProcess(t *testing.T) {
 			outputchan: make(chan string),
 			options: Options{
 
-				FileCidr:     []string{"10.40.0.0", "10.40.0.5"},
-				IPRangeInput: true,
+				FileCidr: []string{"10.40.0.0-10.40.0.5"},
 			},
 			expectedOutput: []string{"10.40.0.0", "10.40.0.1", "10.40.0.2", "10.40.0.3", "10.40.0.4", "10.40.0.5"},
 		},
@@ -82,8 +81,7 @@ func TestProcess(t *testing.T) {
 			outputchan: make(chan string),
 			options: Options{
 
-				FileCidr:     []string{"2c0f:fec9::", "2c0f:fec9::3"},
-				IPRangeInput: true,
+				FileCidr: []string{"2c0f:fec9::-2c0f:fec9::3"},
 			},
 			expectedOutput: []string{"2c0f:fec9::", "2c0f:fec9::1", "2c0f:fec9::2", "2c0f:fec9::3"},
 		},
@@ -93,9 +91,8 @@ func TestProcess(t *testing.T) {
 			outputchan: make(chan string),
 			options: Options{
 
-				FileCidr:     []string{"10.40.0.1", "10.40.0.255"},
-				Aggregate:    true,
-				IPRangeInput: true,
+				FileCidr:  []string{"10.40.0.1-10.40.0.255"},
+				Aggregate: true,
 			},
 			expectedOutput: []string{"10.40.0.64/26", "10.40.0.32/27", "10.40.0.16/28", "10.40.0.8/29", "10.40.0.4/30", "10.40.0.2/31", "10.40.0.1/32", "10.40.0.128/25"},
 		},
@@ -105,9 +102,8 @@ func TestProcess(t *testing.T) {
 			outputchan: make(chan string),
 			options: Options{
 
-				FileCidr:     []string{"2c0f:fec9::", "2c0f:fed7:ffff:ffff:ffff:ffff:ffff:ffff"},
-				Aggregate:    true,
-				IPRangeInput: true,
+				FileCidr:  []string{"2c0f:fec9::-2c0f:fed7:ffff:ffff:ffff:ffff:ffff:ffff"},
+				Aggregate: true,
 			},
 			expectedOutput: []string{"2c0f:fecc::/30", "2c0f:feca::/31", "2c0f:fec9::/32", "2c0f:fed0::/29"},
 		},
@@ -117,9 +113,8 @@ func TestProcess(t *testing.T) {
 			outputchan: make(chan string),
 			options: Options{
 
-				FileCidr:     []string{"10.40.0.0", "10.40.0.255"},
-				Slices:       2,
-				IPRangeInput: true,
+				FileCidr: []string{"10.40.0.0-10.40.0.255"},
+				Slices:   2,
 			},
 			expectedOutput: []string{"10.40.0.0/25", "10.40.0.128/25"},
 		},
@@ -129,11 +124,47 @@ func TestProcess(t *testing.T) {
 			outputchan: make(chan string),
 			options: Options{
 
-				FileCidr:     []string{"10.40.0.0", "10.40.0.255"},
-				HostCount:    128,
-				IPRangeInput: true,
+				FileCidr:  []string{"10.40.0.0-10.40.0.255"},
+				HostCount: 128,
 			},
 			expectedOutput: []string{"10.40.0.0/25", "10.40.0.128/25"},
+		}, {
+			name:       "CombinationOneIPRangeAggregate",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:  []string{"166.8.0.0/16", "166.11.0.0/16", "166.9.0.0-166.10.255.255"},
+				Aggregate: true,
+			},
+			expectedOutput: []string{"166.8.0.0/14"},
+		}, {
+			name:       "CombinationMultipleIPRangeAggregate",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:  []string{"173.0.0.0/18", "173.0.64.0-173.0.127.255", "173.0.128.0/18", "173.0.192.0-173.0.255.255"},
+				Aggregate: true,
+			},
+			expectedOutput: []string{"173.0.0.0/16"},
+		},
+		{
+			name:       "CombinationOneIPRangeCount",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr: []string{"166.8.0.0/16", "166.11.0.0/16", "166.9.0.0-166.10.255.255"},
+				Count:    true,
+			},
+			expectedOutput: []string{"262144"},
+		}, {
+			name:       "MultipleIPRangeAggregate",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:  []string{"166.8.0.0-166.8.0.5", "166.8.0.5-166.8.0.255"},
+				Aggregate: true,
+			},
+			expectedOutput: []string{"166.8.0.0/24"},
 		},
 	}
 	var wg sync.WaitGroup
