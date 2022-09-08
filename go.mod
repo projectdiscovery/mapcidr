@@ -1,8 +1,9 @@
 module github.com/projectdiscovery/mapcidr
 
-go 1.17
+go 1.18
 
 require (
+	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/blackrock v0.0.0-20210415162320-b38689ae3a2e
 	github.com/projectdiscovery/fileutil v0.0.0-20220609150212-453ac591c36c
@@ -12,6 +13,7 @@ require (
 	github.com/projectdiscovery/sliceutil v0.0.0-20220617151003-15892688e1d6
 	github.com/projectdiscovery/stringsutil v0.0.0-20220612082425-0037ce9f89f3
 	github.com/stretchr/testify v1.8.0
+	golang.org/x/exp v0.0.0-20220907003533-145caa8ea1d0
 )
 
 require (
@@ -22,7 +24,6 @@ require (
 	github.com/golang/snappy v0.0.3 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.11 // indirect
-	github.com/logrusorgru/aurora v2.0.3+incompatible // indirect
 	github.com/microcosm-cc/bluemonday v1.0.18 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.1 // indirect
