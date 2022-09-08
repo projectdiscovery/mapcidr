@@ -282,13 +282,12 @@ func prepareIPsFromCidrFlagList(items []string) []string {
 func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
 	var (
-		allCidrs     []*net.IPNet
-		pCidr        *net.IPNet
-		ranger       *ipranger.IPRanger
-		err          error
-		hasSort      = options.SortAscending || options.SortDescending
-		ipRangeMap   = make(map[int][]net.IP)
-		iprangeCount int
+		allCidrs    []*net.IPNet
+		pCidr       *net.IPNet
+		ranger      *ipranger.IPRanger
+		err         error
+		hasSort     = options.SortAscending || options.SortDescending
+		ipRangeList = make([][]net.IP, 0)
 	)
 
 	ranger, _ = ipranger.New()
@@ -306,8 +305,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 			if len(ipRange)%2 == 1 {
 				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
 			}
-			ipRangeMap[iprangeCount] = ipRange
-			iprangeCount++
+			ipRangeList = append(ipRangeList, ipRange)
 			continue
 		}
 		// if it's an ip turn it into a cidr
@@ -342,7 +340,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		}
 	}
 	if options.IPRangeInput {
-		for _, ipRange := range ipRangeMap {
+		for _, ipRange := range ipRangeList {
 
 			cidrs, err := mapcidr.GetCIDRFromIPRange(ipRange[0], ipRange[1])
 			if err != nil {
