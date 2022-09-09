@@ -3,7 +3,6 @@ package mapcidr
 import (
 	"math/big"
 	"net"
-	"reflect"
 	"strings"
 	"testing"
 
@@ -99,9 +98,7 @@ func TestRangeToCIDRs(t *testing.T) {
 				for _, item := range got {
 					cidrStringList = append(cidrStringList, item.String())
 				}
-				if !reflect.DeepEqual(cidrStringList, tt.want) {
-					t.Errorf("RangeToCIDRs() = %v, want %v", cidrStringList, tt.want)
-				}
+				require.Equal(t, tt.want, cidrStringList)
 			}
 		})
 	}
