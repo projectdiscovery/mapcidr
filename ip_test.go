@@ -3,7 +3,6 @@ package mapcidr
 import (
 	"math/big"
 	"net"
-	"strings"
 	"testing"
 
 	"github.com/projectdiscovery/sliceutil"
@@ -91,9 +90,7 @@ func TestRangeToCIDRs(t *testing.T) {
 			var cidrStringList []string
 			got, err := GetCIDRFromIPRange(tt.firstIP, tt.lastIP)
 			if err != nil {
-				if !strings.Contains(err.Error(), tt.expectedError) {
-					t.Errorf("Expected %v Got %v", tt.expectedError, err)
-				}
+				require.Equal(t, tt.expectedError, err.Error())
 			} else {
 				for _, item := range got {
 					cidrStringList = append(cidrStringList, item.String())
