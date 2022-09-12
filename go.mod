@@ -6,7 +6,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/blackrock v0.0.0-20220628111055-35616c71b2dc
 	github.com/projectdiscovery/fileutil v0.0.0-20220705195237-01becc2a8963
-	github.com/projectdiscovery/goflags v0.0.9
+	github.com/projectdiscovery/goflags v0.0.10-0.20220912115102-d9ea875a0a6a
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/ipranger v0.0.3
 	github.com/projectdiscovery/sliceutil v0.0.0-20220625085859-c3a4ecb669f4
@@ -35,6 +35,6 @@ require (
 	github.com/yl2chen/cidranger v1.0.2 // indirect
 	go.uber.org/atomic v1.7.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
-	golang.org/x/net v0.0.0-20220826154423-83b083e8dc8b // indirect
+	golang.org/x/net v0.0.0-20220909164309-bea034e7d591 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
