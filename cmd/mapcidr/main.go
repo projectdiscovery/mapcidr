@@ -283,16 +283,31 @@ func prepareIPsFromCidrFlagList(items []string) []string {
 func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
 	var (
-		allCidrs []*net.IPNet
-		pCidr    *net.IPNet
-		ranger   *ipranger.IPRanger
-		err      error
-		hasSort  = options.SortAscending || options.SortDescending
+		allCidrs    []*net.IPNet
+		pCidr       *net.IPNet
+		ranger      *ipranger.IPRanger
+		err         error
+		hasSort     = options.SortAscending || options.SortDescending
+		ipRangeList = make([][]net.IP, 0)
 	)
 
 	ranger, _ = ipranger.New()
 
 	for cidr := range chancidr {
+
+		// Add IPs into ipRangeList which are passed as input. Example - "192.168.0.0-192.168.0.5"
+		if strings.Contains(cidr, "-") {
+			var ipRange []net.IP
+			for _, ipstr := range strings.Split(cidr, "-") {
+				ipRange = append(ipRange, net.ParseIP(ipstr))
+			}
+			//check if ipRange has more than 2 values
+			if len(ipRange) > 2 {
+				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
+			}
+			ipRangeList = append(ipRangeList, ipRange)
+			continue
+		}
 		// if it's an ip turn it into a cidr
 		if ip := net.ParseIP(cidr); ip != nil {
 			switch {
@@ -320,32 +335,21 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
 			_ = ranger.Add(cidr)
 			allCidrs = append(allCidrs, pCidr)
-		} else if options.Slices > 0 {
-			subnets, err := mapcidr.SplitN(cidr, options.Slices)
-			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
-			}
-			for _, subnet := range subnets {
-				outputchan <- subnet.String()
-			}
-		} else if options.HostCount > 0 {
-			subnets, err := mapcidr.SplitByNumber(cidr, options.HostCount)
-			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
-			}
-			for _, subnet := range subnets {
-				outputchan <- subnet.String()
-			}
 		} else {
-			var ipFlagList []string
-			ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.MatchIP)...)
-			ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.FilterIP)...)
-			ips, err := mapcidr.IPAddressesAsStream(cidr)
-			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
-			}
-			for ip := range ips {
-				filterIPsFromFlagList(outputchan, ip, ipFlagList)
+			commonFunc(cidr, outputchan)
+		}
+	}
+
+	for _, ipRange := range ipRangeList {
+		cidrs, err := mapcidr.GetCIDRFromIPRange(ipRange[0], ipRange[1])
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+			allCidrs = append(allCidrs, cidrs...)
+		} else {
+			for _, cidr := range cidrs {
+				commonFunc(cidr.String(), outputchan)
 			}
 		}
 	}
@@ -413,6 +417,42 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		outputchan <- ipSum.String()
 	}
 	close(outputchan)
+}
+
+/*
+The purpose of the function is split into subnets or split by no. of host or CIDR expansion.
+This gives us benefit of DRY and we can add new features here going forward.
+*/
+func commonFunc(cidr string, outputchan chan string) {
+	if options.Slices > 0 {
+		subnets, err := mapcidr.SplitN(cidr, options.Slices)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		for _, subnet := range subnets {
+			outputchan <- subnet.String()
+		}
+	} else if options.HostCount > 0 {
+		subnets, err := mapcidr.SplitByNumber(cidr, options.HostCount)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		for _, subnet := range subnets {
+			outputchan <- subnet.String()
+		}
+	} else {
+		var ipFlagList []string
+		ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.MatchIP)...)
+		ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.FilterIP)...)
+
+		ips, err := mapcidr.IPAddressesAsStream(cidr)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		for ip := range ips {
+			filterIPsFromFlagList(outputchan, ip, ipFlagList)
+		}
+	}
 }
 
 func output(wg *sync.WaitGroup, outputchan chan string) {
