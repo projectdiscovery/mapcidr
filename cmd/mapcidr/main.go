@@ -121,7 +121,9 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.Version, "version", false, "Show version of the project"),
 	)
 
-	_ = flagSet.Parse()
+	if err := flagSet.Parse(); err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
+	}
 
 	// Read the inputs and configure the logging
 	options.configureOutput()
@@ -331,7 +333,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
-			_ = ranger.AddIPNet(pCidr)
+			_ = ranger.Add(cidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else {
 			commonFunc(cidr, outputchan)
