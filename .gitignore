@@ -1,3 +1,9 @@
 
 cmd/mapcidr/mapcidr
+mapcidr
 .vscode
+integration_tests/goldenfiles
+integration_tests/integration-test
+integration_tests/mapcidr
+cmd/integration-test/mapcidr
+cmd/integration-test/integration-test
