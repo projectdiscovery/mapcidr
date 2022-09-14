@@ -48,7 +48,6 @@ type Options struct {
 	IPFormats             goflags.StringSlice
 	ZeroPadNumberOfZeroes int
 	ZeroPadPermute        bool
-	IPRangeInput          bool
 }
 
 const banner = `
@@ -122,7 +121,9 @@ func ParseOptions() *Options {
 		flagSet.BoolVar(&options.Version, "version", false, "Show version of the project"),
 	)
 
-	_ = flagSet.Parse()
+	if err := flagSet.Parse(); err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
+	}
 
 	// Read the inputs and configure the logging
 	options.configureOutput()
@@ -294,15 +295,14 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 	for cidr := range chancidr {
 
-		// Add IPs into ipRangeMap which are passed as input. Example - "192.168.0.0-192.168.0.5"
+		// Add IPs into ipRangeList which are passed as input. Example - "192.168.0.0-192.168.0.5"
 		if strings.Contains(cidr, "-") {
-			options.IPRangeInput = true
 			var ipRange []net.IP
 			for _, ipstr := range strings.Split(cidr, "-") {
 				ipRange = append(ipRange, net.ParseIP(ipstr))
 			}
 			//check if ipRange has more than 2 values
-			if len(ipRange)%2 == 1 {
+			if len(ipRange) > 2 {
 				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
 			}
 			ipRangeList = append(ipRangeList, ipRange)
@@ -333,25 +333,23 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
-			_ = ranger.AddIPNet(pCidr)
+			_ = ranger.Add(cidr)
 			allCidrs = append(allCidrs, pCidr)
 		} else {
 			commonFunc(cidr, outputchan)
 		}
 	}
-	if options.IPRangeInput {
-		for _, ipRange := range ipRangeList {
 
-			cidrs, err := mapcidr.GetCIDRFromIPRange(ipRange[0], ipRange[1])
-			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
-			}
-			if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
-				allCidrs = append(allCidrs, cidrs...)
-			} else {
-				for _, cidr := range cidrs {
-					commonFunc(cidr.String(), outputchan)
-				}
+	for _, ipRange := range ipRangeList {
+		cidrs, err := mapcidr.GetCIDRFromIPRange(ipRange[0], ipRange[1])
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+			allCidrs = append(allCidrs, cidrs...)
+		} else {
+			for _, cidr := range cidrs {
+				commonFunc(cidr.String(), outputchan)
 			}
 		}
 	}

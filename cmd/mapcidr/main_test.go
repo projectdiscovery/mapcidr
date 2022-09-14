@@ -1,9 +1,10 @@
 package main
 
 import (
-	"reflect"
 	"sync"
 	"testing"
+
+	"github.com/stretchr/testify/require"
 )
 
 func TestProcess(t *testing.T) {
@@ -193,9 +194,7 @@ func TestProcess(t *testing.T) {
 			wg.Wait()
 
 			// compare output
-			if !reflect.DeepEqual(outputlist, tt.expectedOutput) {
-				t.Errorf("RangeToCIDRs() = %v, want %v", outputlist, tt.expectedOutput)
-			}
+			require.Equal(t, tt.expectedOutput, outputlist)
 		})
 
 	}
