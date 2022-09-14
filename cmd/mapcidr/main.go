@@ -509,9 +509,6 @@ func getIPList(cidrs []*net.IPNet) []net.IP {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
 		for ip := range ips {
-			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
-			}
 			ipList = append(ipList, net.ParseIP(ip))
 		}
 	}
