@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -16,6 +17,13 @@ type mapCidrQuery struct {
 	question       string
 	args           string
 	expectedOutput []string
+}
+
+type mapCidrQueryOutputFile struct {
+	question       string
+	args           string
+	expectedOutput []string
+	outputfile     string
 }
 
 var mapcidrTestcases = map[string]TestCase{
@@ -37,6 +45,9 @@ var mapcidrTestcases = map[string]TestCase{
 	"CIDR Skip Broadcast":                  &mapCidrQuery{question: "192.168.0.255/30", expectedOutput: []string{"192.168.0.252", "192.168.0.253", "192.168.0.254"}, args: "-skip-broadcast"},
 	"CIDR Sort (ascending order)":          &mapCidrQuery{question: "192.168.0.0/30", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"}, args: "-s"},
 	"CIDR Reverse Sort (descending order)": &mapCidrQuery{question: "10.40.1.0/30", expectedOutput: []string{"10.40.1.3", "10.40.1.2", "10.40.1.1", "10.40.1.0"}, args: "-sr"},
+	"CIDR Shuffle IPs":                     &mapCidrQuery{question: "192.168.0.0/30", expectedOutput: []string{"192.168.0.3", "192.168.0.0", "192.168.0.1", "192.168.0.2"}, args: "-si"},
+	"CIDR Shuffle Port IPs":                &mapCidrQuery{question: "192.168.0.0/30", expectedOutput: []string{"192.168.0.3:8080", "192.168.0.0:8080", "192.168.0.1:8080", "192.168.0.2:8080"}, args: "-sp 8080"},
+	"CIDR Shuffle Multiple Port IPs":       &mapCidrQuery{question: "192.168.0.0/30", expectedOutput: []string{"192.168.0.3:8080", "192.168.0.0:8080", "192.168.0.1:8080", "192.168.0.2:8080", "192.168.0.3:9090", "192.168.0.0:9090", "192.168.0.1:9090", "192.168.0.2:9090"}, args: "-sp 8080,9090"},
 
 	//IP range
 	"IPRange Exapansion":                      &mapCidrQuery{question: "192.168.0.0-192.168.0.3", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"}},
@@ -53,7 +64,11 @@ var mapcidrTestcases = map[string]TestCase{
 	"IPRange Skip Broadcast":                  &mapCidrQuery{question: "192.168.0.252-192.168.0.255", expectedOutput: []string{"192.168.0.252", "192.168.0.253", "192.168.0.254"}, args: "-skip-broadcast"},
 	"IPRange Sort (ascending order)":          &mapCidrQuery{question: "192.168.0.0-192.168.0.3", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"}, args: "-s"},
 	"IPRange Reverse Sort (descending order)": &mapCidrQuery{question: "192.168.1.0-192.168.1.3", expectedOutput: []string{"192.168.1.3", "192.168.1.2", "192.168.1.1", "192.168.1.0"}, args: "-sr"},
+	"IPRange Shuffle IPs":                     &mapCidrQuery{question: "192.168.0.0-192.168.0.3", expectedOutput: []string{"192.168.0.3", "192.168.0.0", "192.168.0.1", "192.168.0.2"}, args: "-si"},
+	"IPRange Shuffle Port IPs":                &mapCidrQuery{question: "173.0.0.0-173.0.0.3", expectedOutput: []string{"173.0.0.3:8080", "173.0.0.0:8080", "173.0.0.1:8080", "173.0.0.2:8080"}, args: "-sp 8080"},
+	"IPRange Shuffle Multiple Port IPs":       &mapCidrQuery{question: "192.168.0.0-192.168.0.3", expectedOutput: []string{"192.168.0.3:8080", "192.168.0.0:8080", "192.168.0.1:8080", "192.168.0.2:8080", "192.168.0.3:9090", "192.168.0.0:9090", "192.168.0.1:9090", "192.168.0.2:9090"}, args: "-sp 8080,9090"},
 
+	// sort IPs from file
 	"IPs Sort (ascending order)":  &mapCidrQuery{question: "", expectedOutput: []string{"1.1.1.1", "2.2.2.2", "2.4.3.2", "2.4.4.4", "8.8.8.8", "9.9.9.9", "255.255.255.255"}, args: "-cl ./goldenfiles/ips_sort.txt -s"},
 	"IPs Sort (descending order)": &mapCidrQuery{question: "", expectedOutput: []string{"255.255.255.255", "9.9.9.9", "8.8.8.8", "2.4.4.4", "2.4.3.2", "2.2.2.2", "1.1.1.1"}, args: "-cl ./goldenfiles/ips_sort.txt -s"},
 
@@ -63,6 +78,8 @@ var mapcidrTestcases = map[string]TestCase{
 	"IPRange & CIDR Expansion":           &mapCidrQuery{question: "192.168.0.0/30,192.168.0.4-192.168.0.10", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3", "192.168.0.4", "192.168.0.5", "192.168.0.6", "192.168.0.7", "192.168.0.8", "192.168.0.9", "192.168.0.10"}},
 	"IPRange & CIDR Count":               &mapCidrQuery{question: "166.8.0.0/16,166.11.0.0/16,166.9.0.0-166.10.255.255", expectedOutput: []string{"262144"}, args: "-c"},
 	"IPRange & CIDR convert IPs to IPv6": &mapCidrQuery{question: "192.168.0.0-192.168.0.3", expectedOutput: []string{"00:00:00:00:00:ffff:c0a8:0000", "00:00:00:00:00:ffff:c0a8:0001", "00:00:00:00:00:ffff:c0a8:0002", "00:00:00:00:00:ffff:c0a8:0003"}, args: "-t6"},
+
+	"OutputFile case": &mapCidrQueryOutputFile{question: "192.168.0.0/30", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"}, args: "-o /tmp/output.txt", outputfile: "/tmp/output.txt"},
 }
 
 func (h *mapCidrQuery) Execute() error {
@@ -70,6 +87,31 @@ func (h *mapCidrQuery) Execute() error {
 	result, err := RunMapCidrAndGetResults(h.question, debug, h.args)
 	if err != nil {
 		return err
+	}
+	err = compareResult(h.expectedOutput, result)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (h *mapCidrQueryOutputFile) Execute() error {
+
+	_, err := RunMapCidrAndGetResults(h.question, debug, h.args)
+	if err != nil {
+		return err
+	}
+	// read output file and compare result
+	fileContent, err := ioutil.ReadFile(h.outputfile)
+	if err != nil {
+		return err
+	}
+	result := []string{}
+	items := strings.Split(string(fileContent), "\n")
+	for _, i := range items {
+		if i != "" {
+			result = append(result, i)
+		}
 	}
 	err = compareResult(h.expectedOutput, result)
 	if err != nil {
