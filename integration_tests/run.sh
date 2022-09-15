@@ -1,7 +1,6 @@
 #!/bin/bash
 
 echo "::group::Build mapcidr"
-rm integration-test mapcidr 2>/dev/null
 cd ../cmd/mapcidr
 go build
 mv mapcidr ../../integration_tests/mapcidr
@@ -16,7 +15,9 @@ echo "::endgroup::"
 ./integration-test
 if [ $? -eq 0 ]
 then
+  rm integration-test mapcidr 2>/dev/null
   exit 0
 else
+  rm integration-test mapcidr 2>/dev/null
   exit 1
 fi
