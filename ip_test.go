@@ -1,6 +1,7 @@
 package mapcidr
 
 import (
+	"fmt"
 	"math/big"
 	"net"
 	"testing"
@@ -99,4 +100,11 @@ func TestRangeToCIDRs(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDifferenceCIDR(t *testing.T) {
+	_, target, _ := net.ParseCIDR("192.168.1.1/16")
+	_, exclude, _ := net.ParseCIDR("192.168.1.1/24")
+	fmt.Println("target - exclude: ", DifferenceCIDR(target, exclude))
+	fmt.Println("exclude - target: ", DifferenceCIDR(exclude, target))
 }

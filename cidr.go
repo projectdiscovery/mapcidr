@@ -127,6 +127,22 @@ func SplitIPNetIntoN(iprange *net.IPNet, n int) ([]*net.IPNet, error) {
 	return subnets, nil
 }
 
+// DifferenceCIDR set difference of target and exclude
+func DifferenceCIDR(target, exclude *net.IPNet) []*net.IPNet {
+	left, _, right := partitionCIDR(*target, *exclude)
+	return append(left, right...)
+}
+
+// ContainsCIDR check if A contains B
+func ContainsCIDR(A, B *net.IPNet) bool {
+	Bfirst, Blast, _ := AddressRange(B)
+	if A.Contains(Bfirst) && A.Contains(Blast) {
+		return true
+	} else {
+		return false
+	}
+}
+
 // divideIPNet divides an IPNet into two IPNet structures.
 func divideIPNet(ipnet *net.IPNet) ([]*net.IPNet, error) {
 	subnets := make([]*net.IPNet, 0, 2) //nolint

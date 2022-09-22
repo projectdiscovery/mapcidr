@@ -54,12 +54,12 @@ const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.0.2
+/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.0.3-dev
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const Version = `v1.0.2`
+const Version = `v1.0.3-dev`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
@@ -107,8 +107,8 @@ func ParseOptions() *Options {
 
 	// Miscellaneous
 	flagSet.CreateGroup("miscellaneous", "Miscellaneous",
-		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs/CIDRs in ascending order"),
-		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs/CIDRs in descending order"),
+		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs in ascending order"),
+		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs in descending order"),
 		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "si", false, "Shuffle Input IPs in random order"),
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle Input IP:Port in random order"),
 	)
@@ -175,6 +175,10 @@ func (options *Options) validateOptions() error {
 	if options.FilterIP != nil && options.MatchIP != nil {
 		return errors.New("both match and filter mode specified")
 	}
+
+	if (options.SortAscending || options.SortDescending) && options.Aggregate {
+		return errors.New("can sort only IPs. sorting can't be used with aggregate")
+	}
 	return nil
 }
 
@@ -215,32 +219,41 @@ func main() {
 	wg.Wait()
 }
 
-func filterIPsFromFlagList(channel chan string, ip string, ipFlagList []string) {
-	if len(ipFlagList) == 0 {
-		sendToOutputChannel(ip, channel)
-		return
-	}
+func filterIPsFromFlagList(channel chan string, ipnet *net.IPNet) {
 	if options.MatchIP != nil {
-		for _, item := range ipFlagList {
-			if strings.EqualFold(ip, item) {
-				sendToOutputChannel(ip, channel)
+		for _, item := range prepareIPsFromCidrFlagList(options.MatchIP) {
+			if mapcidr.ContainsCIDR(item, ipnet) {
+				sendToOutputChannel(ipnet.String(), channel)
 				break
+			} else if mapcidr.ContainsCIDR(ipnet, item) {
+				sendToOutputChannel(item.String(), channel)
 			}
 		}
 	} else if options.FilterIP != nil {
 		var contains = false
-		for _, item := range ipFlagList {
-			if ip == item {
+		var excluded []*net.IPNet
+		for _, item := range prepareIPsFromCidrFlagList(options.FilterIP) {
+			if mapcidr.ContainsCIDR(item, ipnet) {
 				contains = true
+			} else if mapcidr.ContainsCIDR(ipnet, item) {
+				excluded = append(excluded, mapcidr.DifferenceCIDR(ipnet, item)...)
 			}
 		}
 		if !contains {
-			sendToOutputChannel(ip, channel)
+			if excluded == nil {
+				excluded = []*net.IPNet{ipnet}
+			}
+
+			for _, e := range excluded {
+				sendToOutputChannel(e.String(), channel)
+			}
 		}
 	} else {
-		sendToOutputChannel(ip, channel)
+		sendToOutputChannel(ipnet.String(), channel)
 	}
+
 }
+
 func sendToOutputChannel(ip string, channel chan string) {
 	ipnet := net.ParseIP(ip)
 	switch {
@@ -265,21 +278,28 @@ func sendToOutputChannel(ip string, channel chan string) {
 		channel <- ip
 	}
 }
-func prepareIPsFromCidrFlagList(items []string) []string {
-	var flagIPList []string
+
+func prepareIPsFromCidrFlagList(items []string) []*net.IPNet {
+	var flagIPList []*net.IPNet
 	for _, item := range items {
-		if _, pCidr, err := net.ParseCIDR(item); err == nil && pCidr != nil {
-			if ips, err := mapcidr.IPAddressesAsStream(pCidr.String()); err == nil {
-				for ip := range ips {
-					flagIPList = append(flagIPList, ip)
-				}
+		if ip := net.ParseIP(item); ip != nil {
+			switch {
+			case ip.To4() != nil:
+				item += "/32"
+			case ip.To16() != nil:
+				item += "/128"
 			}
+		}
+		// test if we have a cidr
+		if _, pCidr, err := net.ParseCIDR(item); err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
 		} else {
-			flagIPList = append(flagIPList, item)
+			flagIPList = append(flagIPList, pCidr)
 		}
 	}
 	return flagIPList
 }
+
 func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
 	var (
@@ -390,17 +410,18 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	}
 
 	if hasSort {
+		ips := getIPList(allCidrs)
 		if options.SortDescending {
-			sort.Slice(allCidrs, func(i, j int) bool {
-				return bytes.Compare(allCidrs[j].IP, allCidrs[i].IP) < 0
+			sort.Slice(ips, func(i, j int) bool {
+				return bytes.Compare(ips[j], ips[i]) < 0
 			})
 		} else {
-			sort.Slice(allCidrs, func(i, j int) bool {
-				return bytes.Compare(allCidrs[i].IP, allCidrs[j].IP) < 0
+			sort.Slice(ips, func(i, j int) bool {
+				return bytes.Compare(ips[i], ips[j]) < 0
 			})
 		}
-		for _, cidr := range allCidrs {
-			outputchan <- cidr.String()
+		for _, ip := range ips {
+			outputchan <- ip.String()
 		}
 	}
 
@@ -440,17 +461,21 @@ func commonFunc(cidr string, outputchan chan string) {
 		for _, subnet := range subnets {
 			outputchan <- subnet.String()
 		}
-	} else {
-		var ipFlagList []string
-		ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.MatchIP)...)
-		ipFlagList = append(ipFlagList, prepareIPsFromCidrFlagList(options.FilterIP)...)
+	} else if options.MatchIP != nil || options.FilterIP != nil {
+		_, pCidr, err := net.ParseCIDR(cidr)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+			return
+		}
 
+		filterIPsFromFlagList(outputchan, pCidr)
+	} else {
 		ips, err := mapcidr.IPAddressesAsStream(cidr)
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
 		for ip := range ips {
-			filterIPsFromFlagList(outputchan, ip, ipFlagList)
+			outputchan <- ip
 		}
 	}
 }
@@ -493,4 +518,19 @@ func outputItems(f *os.File, items ...string) {
 			_, _ = f.WriteString(item + "\n")
 		}
 	}
+}
+
+// returns the list of expanded IPs of given CIDR list
+func getIPList(cidrs []*net.IPNet) []net.IP {
+	var ipList []net.IP
+	for _, cidr := range cidrs {
+		ips, err := mapcidr.IPAddressesAsStream(cidr.String())
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		for ip := range ips {
+			ipList = append(ipList, net.ParseIP(ip))
+		}
+	}
+	return ipList
 }
