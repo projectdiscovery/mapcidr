@@ -107,8 +107,8 @@ func ParseOptions() *Options {
 
 	// Miscellaneous
 	flagSet.CreateGroup("miscellaneous", "Miscellaneous",
-		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs in ascending order"),
-		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs in descending order"),
+		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs/CIDRs in ascending order"),
+		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs/CIDRs in descending order"),
 		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "si", false, "Shuffle Input IPs in random order"),
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle Input IP:Port in random order"),
 	)
@@ -176,9 +176,6 @@ func (options *Options) validateOptions() error {
 		return errors.New("both match and filter mode specified")
 	}
 
-	if (options.SortAscending || options.SortDescending) && options.Aggregate {
-		return errors.New("can sort only IPs. sorting can't be used with aggregate")
-	}
 	return nil
 }
 
@@ -410,18 +407,17 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	}
 
 	if hasSort {
-		ips := getIPList(allCidrs)
 		if options.SortDescending {
-			sort.Slice(ips, func(i, j int) bool {
-				return bytes.Compare(ips[j], ips[i]) < 0
+			sort.Slice(allCidrs, func(i, j int) bool {
+				return bytes.Compare(allCidrs[j].IP, allCidrs[i].IP) < 0
 			})
 		} else {
-			sort.Slice(ips, func(i, j int) bool {
-				return bytes.Compare(ips[i], ips[j]) < 0
+			sort.Slice(allCidrs, func(i, j int) bool {
+				return bytes.Compare(allCidrs[i].IP, allCidrs[j].IP) < 0
 			})
 		}
-		for _, ip := range ips {
-			outputchan <- ip.String()
+		for _, cidr := range allCidrs {
+			outputchan <- cidr.String()
 		}
 	}
 
@@ -518,19 +514,4 @@ func outputItems(f *os.File, items ...string) {
 			_, _ = f.WriteString(item + "\n")
 		}
 	}
-}
-
-// returns the list of expanded IPs of given CIDR list
-func getIPList(cidrs []*net.IPNet) []net.IP {
-	var ipList []net.IP
-	for _, cidr := range cidrs {
-		ips, err := mapcidr.IPAddressesAsStream(cidr.String())
-		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
-		}
-		for ip := range ips {
-			ipList = append(ipList, net.ParseIP(ip))
-		}
-	}
-	return ipList
 }
