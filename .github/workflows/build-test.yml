@@ -22,6 +22,16 @@ jobs:
         run: go build .
         working-directory: cmd/mapcidr/
 
+      - name: Test
+        run: go test ./...
+        working-directory: .
+
+      - name: Integration Tests
+        env:
+          GH_ACTION: true
+        run: bash run.sh
+        working-directory: integration_tests/
+
       - name: Race Test
         run: go run -race . -cidr 192.168.1.224/30
         working-directory: cmd/mapcidr/
