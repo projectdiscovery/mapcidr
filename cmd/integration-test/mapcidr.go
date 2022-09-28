@@ -83,20 +83,14 @@ var mapcidrTestcases = map[string]TestCase{
 }
 
 func (h *mapCidrQuery) Execute() error {
-
 	result, err := RunMapCidrAndGetResults(h.question, debug, h.args)
 	if err != nil {
 		return err
 	}
-	err = compareResult(h.expectedOutput, result)
-	if err != nil {
-		return err
-	}
-	return nil
+	return compareResult(h.expectedOutput, result)
 }
 
 func (h *mapCidrQueryOutputFile) Execute() error {
-
 	_, err := RunMapCidrAndGetResults(h.question, debug, h.args)
 	if err != nil {
 		return err
@@ -113,11 +107,7 @@ func (h *mapCidrQueryOutputFile) Execute() error {
 			result = append(result, i)
 		}
 	}
-	err = compareResult(h.expectedOutput, result)
-	if err != nil {
-		return err
-	}
-	return nil
+	return compareResult(h.expectedOutput, result)
 }
 
 func errIncorrectResultsCount(results []string) error {
@@ -133,15 +123,10 @@ func compareResult(expected, result []string) error {
 	if len(result) != len(expected) {
 		return errIncorrectResultsCount(result)
 	}
-	var notEqual = false
 	for _, v := range result {
 		if !slices.Contains(expected, v) {
-			notEqual = true
-			break
+			return errIncorrectResult(expected, result)
 		}
-	}
-	if notEqual {
-		return errIncorrectResult(expected, result)
 	}
 	return nil
 }
