@@ -136,11 +136,7 @@ func DifferenceCIDR(target, exclude *net.IPNet) []*net.IPNet {
 // ContainsCIDR check if A contains B
 func ContainsCIDR(A, B *net.IPNet) bool {
 	Bfirst, Blast, _ := AddressRange(B)
-	if A.Contains(Bfirst) && A.Contains(Blast) {
-		return true
-	} else {
-		return false
-	}
+	return A.Contains(Bfirst) && A.Contains(Blast)
 }
 
 // divideIPNet divides an IPNet into two IPNet structures.
