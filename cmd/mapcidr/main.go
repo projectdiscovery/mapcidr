@@ -230,19 +230,24 @@ func filterIPsFromFlagList(channel chan string, ipnet *net.IPNet) {
 		}
 	} else if options.FilterIP != nil {
 		var contains = false
-		var excluded []*net.IPNet
+		var excluded = []*net.IPNet{ipnet}
+	loop:
 		for _, item := range prepareIPsFromCidrFlagList(options.FilterIP) {
 			if mapcidr.ContainsCIDR(item, ipnet) {
 				contains = true
-			} else if mapcidr.ContainsCIDR(ipnet, item) {
-				excluded = append(excluded, mapcidr.DifferenceCIDR(ipnet, item)...)
+				break loop
 			}
+			var tmp []*net.IPNet
+			for _, excludedIP := range excluded {
+				if mapcidr.ContainsCIDR(excludedIP, item) {
+					tmp = append(tmp, mapcidr.DifferenceCIDR(excludedIP, item)...)
+				} else {
+					tmp = append(tmp, excludedIP)
+				}
+			}
+			excluded = tmp
 		}
 		if !contains {
-			if excluded == nil {
-				excluded = []*net.IPNet{ipnet}
-			}
-
 			for _, e := range excluded {
 				sendToOutputChannel(e.String(), channel)
 			}
@@ -253,28 +258,31 @@ func filterIPsFromFlagList(channel chan string, ipnet *net.IPNet) {
 
 }
 
-func sendToOutputChannel(ip string, channel chan string) {
-	ipnet := net.ParseIP(ip)
-	switch {
-	case options.ToIP4:
-		if ip4 := ipnet.To4(); ip4 != nil {
-			channel <- ip4.String()
-		} else {
+func sendToOutputChannel(cidr string, channel chan string) {
+	ips, _ := mapcidr.IPAddressesAsStream(cidr)
+	for ip := range ips {
+		ipnet := net.ParseIP(ip)
+		switch {
+		case options.ToIP4:
+			if ip4 := ipnet.To4(); ip4 != nil {
+				channel <- ip4.String()
+			} else {
+				channel <- ip
+			}
+		case options.ToIP6:
+			if ip6 := ipnet.To16(); ip6 != nil {
+				// check if it's ip4-mapped-ip6
+				if ipnet.To4() != nil {
+					channel <- mapcidr.FmtIP4MappedIP6(ip6)
+				} else {
+					channel <- ip6.String()
+				}
+			} else {
+				gologger.Warning().Msgf("%s could not be mapped to IPv6\n", ip)
+			}
+		default:
 			channel <- ip
 		}
-	case options.ToIP6:
-		if ip6 := ipnet.To16(); ip6 != nil {
-			// check if it's ip4-mapped-ip6
-			if ipnet.To4() != nil {
-				channel <- mapcidr.FmtIP4MappedIP6(ip6)
-			} else {
-				channel <- ip6.String()
-			}
-		} else {
-			gologger.Warning().Msgf("%s could not be mapped to IPv6\n", ip)
-		}
-	default:
-		channel <- ip
 	}
 }
 
