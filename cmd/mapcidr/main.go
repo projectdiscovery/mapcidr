@@ -18,6 +18,7 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
+	"github.com/projectdiscovery/mapcidr/asnmap_cli"
 	"github.com/projectdiscovery/sliceutil"
 )
 
@@ -194,6 +195,7 @@ func (options *Options) configureOutput() {
 var options *Options
 
 func main() {
+	asnmap_cli.UseASN()
 	options = ParseOptions()
 	chancidr := make(chan string)
 	outputchan := make(chan string)
