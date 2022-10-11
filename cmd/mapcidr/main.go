@@ -18,7 +18,7 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
-	"github.com/projectdiscovery/mapcidr/asnmap_cli"
+	asn "github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/sliceutil"
 )
 
@@ -195,7 +195,6 @@ func (options *Options) configureOutput() {
 var options *Options
 
 func main() {
-	asnmap_cli.UseASN()
 	options = ParseOptions()
 	chancidr := make(chan string)
 	outputchan := make(chan string)
@@ -289,12 +288,14 @@ func prepareIPsFromCidrFlagList(items []string) []string {
 func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
 	var (
-		allCidrs    []*net.IPNet
-		pCidr       *net.IPNet
-		ranger      *ipranger.IPRanger
-		err         error
-		hasSort     = options.SortAscending || options.SortDescending
-		ipRangeList = make([][]net.IP, 0)
+		allCidrs      []*net.IPNet
+		pCidr         *net.IPNet
+		ranger        *ipranger.IPRanger
+		err           error
+		hasSort       = options.SortAscending || options.SortDescending
+		ipRangeList   = make([][]net.IP, 0)
+		asnNumberList []string
+		asnClient     = asn.New()
 	)
 
 	ranger, _ = ipranger.New()
@@ -312,6 +313,11 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
 			}
 			ipRangeList = append(ipRangeList, ipRange)
+			continue
+		}
+		// Add ASN number
+		if asn.IsASN(cidr) {
+			asnNumberList = append(asnNumberList, cidr)
 			continue
 		}
 		// if it's an ip turn it into a cidr
@@ -351,6 +357,17 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
+		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+			allCidrs = append(allCidrs, cidrs...)
+		} else {
+			for _, cidr := range cidrs {
+				commonFunc(cidr.String(), outputchan)
+			}
+		}
+	}
+
+	for _, asnNumber := range asnNumberList {
+		cidrs := asnClient.GetCIDRsForASNNum(asnNumber)
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
 			allCidrs = append(allCidrs, cidrs...)
 		} else {
