@@ -367,7 +367,10 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	}
 
 	for _, asnNumber := range asnNumberList {
-		cidrs := asnClient.GetCIDRsForASNNum(asnNumber)
+		cidrs, err := asnClient.GetCIDRsForASNNum(asnNumber)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
 			allCidrs = append(allCidrs, cidrs...)
 		} else {
