@@ -39,6 +39,7 @@ func (c *ASNClient) GetCIDRsForASNNum(value string) ([]*net.IPNet, error) {
 }
 
 // GetIPAddressesAsStream returns the chan of IP address for given ASN number
+// returning the string chan for optimizing the memory
 func (c *ASNClient) GetIPAddressesAsStream(value string) (chan string, error) {
 	cidrs, err := c.GetCIDRsForASNNum(value)
 	if err != nil {

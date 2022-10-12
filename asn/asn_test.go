@@ -1,6 +1,8 @@
 package asn
 
 import (
+	"io/ioutil"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -40,5 +42,41 @@ func Test_asnClient_GetCIDRsForASNNum(t *testing.T) {
 			result = append(result, cidr.String())
 		}
 		require.ElementsMatch(t, tt.expected, result, "could not get correct cidrs")
+	}
+}
+
+func TestASNClient_GetIPAddressesAsStream(t *testing.T) {
+	tests := []struct {
+		name               string
+		asnNumber          string
+		expectedOutputFile string
+	}{
+		{
+			name:               "ASN Number 1",
+			asnNumber:          "AS14421",
+			expectedOutputFile: "goldenfile/AS14421.txt",
+		},
+		{
+			name:               "ASN Number 2",
+			asnNumber:          "AS134029",
+			expectedOutputFile: "goldenfile/AS134029.txt",
+		},
+	}
+	asnClient := New()
+	for _, tt := range tests {
+		var result []string
+		got, err := asnClient.GetIPAddressesAsStream(tt.asnNumber)
+		if err != nil {
+			require.ErrorContains(t, err, "invalid asn number")
+		}
+		for ip := range got {
+			result = append(result, ip)
+		}
+		// read the expectedOutputFile
+		fileContent, err := ioutil.ReadFile(tt.expectedOutputFile)
+		require.Nil(t, err, "could not read the expectedOutputFile file")
+		items := strings.Split(string(fileContent), "\n")
+
+		require.ElementsMatch(t, items, result, "could not get correct cidrs")
 	}
 }
