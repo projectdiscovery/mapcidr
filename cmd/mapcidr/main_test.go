@@ -166,6 +166,60 @@ func TestProcess(t *testing.T) {
 				Aggregate: true,
 			},
 			expectedOutput: []string{"166.8.0.0/24"},
+		}, {
+			name:       "IPsSortAscending",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:      []string{"1.1.1.1", "8.8.8.8", "255.255.255.255", "2.2.2.2", "2.4.4.4", "2.4.3.2", "9.9.9.9"},
+				SortAscending: true,
+			},
+			expectedOutput: []string{"1.1.1.1", "2.2.2.2", "2.4.3.2", "2.4.4.4", "8.8.8.8", "9.9.9.9", "255.255.255.255"},
+		}, {
+			name:       "IPsSortDescending",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:       []string{"1.1.1.1", "255.255.255.255", "2.4.3.2", "2.2.2.2", "8.8.8.8", "2.4.4.4", "9.9.9.9"},
+				SortDescending: true,
+			},
+			expectedOutput: []string{"255.255.255.255", "9.9.9.9", "8.8.8.8", "2.4.4.4", "2.4.3.2", "2.2.2.2", "1.1.1.1"},
+		}, {
+			name:       "CIDRsIPSortAscending",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:      []string{"10.40.0.0/30"},
+				SortAscending: true,
+			},
+			expectedOutput: []string{"10.40.0.0", "10.40.0.1", "10.40.0.2", "10.40.0.3"},
+		}, {
+			name:       "CIDRsIPSortDescending",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:       []string{"10.40.1.0/30"},
+				SortDescending: true,
+			},
+			expectedOutput: []string{"10.40.1.3", "10.40.1.2", "10.40.1.1", "10.40.1.0"},
+		}, {
+			name:       "IPRangeIPSortAscending",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:      []string{"192.168.0.0-192.168.0.3"},
+				SortAscending: true,
+			},
+			expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"},
+		}, {
+			name:       "IPRangeIIPSortDescending",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:       []string{"192.168.1.0-192.168.1.3"},
+				SortDescending: true,
+			},
+			expectedOutput: []string{"192.168.1.3", "192.168.1.2", "192.168.1.1", "192.168.1.0"},
 		},
 	}
 	var wg sync.WaitGroup

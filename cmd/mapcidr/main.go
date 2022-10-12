@@ -18,6 +18,7 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
+	asn "github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/sliceutil"
 )
 
@@ -54,12 +55,12 @@ const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.0.2
+/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.0.3
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const Version = `v1.0.2`
+const Version = `v1.0.3`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
@@ -107,8 +108,8 @@ func ParseOptions() *Options {
 
 	// Miscellaneous
 	flagSet.CreateGroup("miscellaneous", "Miscellaneous",
-		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs/CIDRs in ascending order"),
-		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs/CIDRs in descending order"),
+		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs in ascending order"),
+		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs in descending order"),
 		flagSet.BoolVarP(&options.Shuffle, "shuffle-ip", "si", false, "Shuffle Input IPs in random order"),
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle Input IP:Port in random order"),
 	)
@@ -174,6 +175,10 @@ func (options *Options) validateOptions() error {
 	}
 	if options.FilterIP != nil && options.MatchIP != nil {
 		return errors.New("both match and filter mode specified")
+	}
+
+	if (options.SortAscending || options.SortDescending) && options.Aggregate {
+		return errors.New("can sort only IPs. sorting can't be used with aggregate")
 	}
 	return nil
 }
@@ -283,12 +288,14 @@ func prepareIPsFromCidrFlagList(items []string) []string {
 func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
 	var (
-		allCidrs    []*net.IPNet
-		pCidr       *net.IPNet
-		ranger      *ipranger.IPRanger
-		err         error
-		hasSort     = options.SortAscending || options.SortDescending
-		ipRangeList = make([][]net.IP, 0)
+		allCidrs      []*net.IPNet
+		pCidr         *net.IPNet
+		ranger        *ipranger.IPRanger
+		err           error
+		hasSort       = options.SortAscending || options.SortDescending
+		ipRangeList   = make([][]net.IP, 0)
+		asnNumberList []string
+		asnClient     = asn.New()
 	)
 
 	ranger, _ = ipranger.New()
@@ -306,6 +313,11 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
 			}
 			ipRangeList = append(ipRangeList, ipRange)
+			continue
+		}
+		// Add ASN number
+		if asn.IsASN(cidr) {
+			asnNumberList = append(asnNumberList, cidr)
 			continue
 		}
 		// if it's an ip turn it into a cidr
@@ -354,6 +366,20 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		}
 	}
 
+	for _, asnNumber := range asnNumberList {
+		cidrs, err := asnClient.GetCIDRsForASNNum(asnNumber)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+			allCidrs = append(allCidrs, cidrs...)
+		} else {
+			for _, cidr := range cidrs {
+				commonFunc(cidr.String(), outputchan)
+			}
+		}
+	}
+
 	// Shuffle perform the aggregation
 	if options.Shuffle {
 		var ports []int
@@ -390,17 +416,18 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	}
 
 	if hasSort {
+		ips := getIPList(allCidrs)
 		if options.SortDescending {
-			sort.Slice(allCidrs, func(i, j int) bool {
-				return bytes.Compare(allCidrs[j].IP, allCidrs[i].IP) < 0
+			sort.Slice(ips, func(i, j int) bool {
+				return bytes.Compare(ips[j], ips[i]) < 0
 			})
 		} else {
-			sort.Slice(allCidrs, func(i, j int) bool {
-				return bytes.Compare(allCidrs[i].IP, allCidrs[j].IP) < 0
+			sort.Slice(ips, func(i, j int) bool {
+				return bytes.Compare(ips[i], ips[j]) < 0
 			})
 		}
-		for _, cidr := range allCidrs {
-			outputchan <- cidr.String()
+		for _, ip := range ips {
+			outputchan <- ip.String()
 		}
 	}
 
@@ -493,4 +520,19 @@ func outputItems(f *os.File, items ...string) {
 			_, _ = f.WriteString(item + "\n")
 		}
 	}
+}
+
+// returns the list of expanded IPs of given CIDR list
+func getIPList(cidrs []*net.IPNet) []net.IP {
+	var ipList []net.IP
+	for _, cidr := range cidrs {
+		ips, err := mapcidr.IPAddressesAsStream(cidr.String())
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		for ip := range ips {
+			ipList = append(ipList, net.ParseIP(ip))
+		}
+	}
+	return ipList
 }
