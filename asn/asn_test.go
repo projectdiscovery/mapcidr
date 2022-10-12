@@ -54,12 +54,12 @@ func TestASNClient_GetIPAddressesAsStream(t *testing.T) {
 		{
 			name:               "ASN Number 1",
 			asnNumber:          "AS14421",
-			expectedOutputFile: "goldenfile/AS14421.txt",
+			expectedOutputFile: "goldenfiles/AS14421.txt",
 		},
 		{
 			name:               "ASN Number 2",
 			asnNumber:          "AS134029",
-			expectedOutputFile: "goldenfile/AS134029.txt",
+			expectedOutputFile: "goldenfiles/AS134029.txt",
 		},
 	}
 	asnClient := New()
