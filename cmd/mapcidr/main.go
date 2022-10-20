@@ -18,6 +18,7 @@ import (
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
+	asn "github.com/projectdiscovery/mapcidr/asn"
 	"github.com/projectdiscovery/sliceutil"
 )
 
@@ -54,12 +55,12 @@ const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.0.3-dev
+/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.0.3
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const Version = `v1.0.3-dev`
+const Version = `v1.0.3`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
@@ -310,12 +311,14 @@ func prepareIPsFromCidrFlagList(items []string) []*net.IPNet {
 func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
 	var (
-		allCidrs    []*net.IPNet
-		pCidr       *net.IPNet
-		ranger      *ipranger.IPRanger
-		err         error
-		hasSort     = options.SortAscending || options.SortDescending
-		ipRangeList = make([][]net.IP, 0)
+		allCidrs      []*net.IPNet
+		pCidr         *net.IPNet
+		ranger        *ipranger.IPRanger
+		err           error
+		hasSort       = options.SortAscending || options.SortDescending
+		ipRangeList   = make([][]net.IP, 0)
+		asnNumberList []string
+		asnClient     = asn.New()
 	)
 
 	ranger, _ = ipranger.New()
@@ -333,6 +336,11 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
 			}
 			ipRangeList = append(ipRangeList, ipRange)
+			continue
+		}
+		// Add ASN number
+		if asn.IsASN(cidr) {
+			asnNumberList = append(asnNumberList, cidr)
 			continue
 		}
 		// if it's an ip turn it into a cidr
@@ -369,6 +377,20 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 	for _, ipRange := range ipRangeList {
 		cidrs, err := mapcidr.GetCIDRFromIPRange(ipRange[0], ipRange[1])
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+			allCidrs = append(allCidrs, cidrs...)
+		} else {
+			for _, cidr := range cidrs {
+				commonFunc(cidr.String(), outputchan)
+			}
+		}
+	}
+
+	for _, asnNumber := range asnNumberList {
+		cidrs, err := asnClient.GetCIDRsForASNNum(asnNumber)
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}

@@ -305,6 +305,19 @@ $ echo 173.0.84.0/16 | mapcidr -count -silent
 65536
 ```
 
+### ASN Input
+
+In order to get the IP address of ASN number, use the following command
+```
+echo AS15133 | mapcidr -silent
+
+5.104.64.0
+5.104.64.1
+5.104.64.2
+5.104.64.3
+5.104.64.4
+```
+
 # Use mapCIDR as a library
 
 It's possible to use the library directly in your go programs. The following code snippets outline how to divide a cidr into subnets, and how to divide the same into subnets containing a certain number of hosts
