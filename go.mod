@@ -13,7 +13,7 @@ require (
 	github.com/projectdiscovery/ipranger v0.0.3
 	github.com/projectdiscovery/sliceutil v0.0.0-20220625085859-c3a4ecb669f4
 	github.com/projectdiscovery/stringsutil v0.0.2
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	golang.org/x/exp v0.0.0-20220907003533-145caa8ea1d0
 )
 
