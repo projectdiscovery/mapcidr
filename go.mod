@@ -8,7 +8,7 @@ require (
 	github.com/projectdiscovery/asnmap v0.0.1
 	github.com/projectdiscovery/blackrock v0.0.0-20220628111055-35616c71b2dc
 	github.com/projectdiscovery/fileutil v0.0.3
-	github.com/projectdiscovery/goflags v0.1.1
+	github.com/projectdiscovery/goflags v0.1.2
 	github.com/projectdiscovery/gologger v1.1.4
 	github.com/projectdiscovery/ipranger v0.0.3
 	github.com/projectdiscovery/sliceutil v0.0.0-20220625085859-c3a4ecb669f4
