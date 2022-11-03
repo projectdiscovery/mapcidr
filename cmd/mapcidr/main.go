@@ -477,13 +477,7 @@ func commonFunc(cidr string, outputchan chan string) {
 
 		filterIPsFromFlagList(outputchan, pCidr)
 	} else {
-		ips, err := mapcidr.IPAddressesAsStream(cidr)
-		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
-		}
-		for ip := range ips {
-			outputchan <- ip
-		}
+		sendToOutputChannel(cidr, outputchan)
 	}
 }
 
