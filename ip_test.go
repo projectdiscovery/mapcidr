@@ -5,7 +5,7 @@ import (
 	"net"
 	"testing"
 
-	"github.com/projectdiscovery/sliceutil"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 	"github.com/stretchr/testify/require"
 )
 
