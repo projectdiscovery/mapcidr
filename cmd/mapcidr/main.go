@@ -12,14 +12,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
 	asn "github.com/projectdiscovery/mapcidr/asn"
-	"github.com/projectdiscovery/sliceutil"
+	fileutil "github.com/projectdiscovery/utils/file"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
 // Options contains cli options
