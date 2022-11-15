@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
+	"os"
 	"strings"
 
 	"golang.org/x/exp/slices"
@@ -102,7 +102,7 @@ func (h *mapCidrQueryOutputFile) Execute() error {
 		return err
 	}
 	// read output file and compare result
-	fileContent, err := ioutil.ReadFile(h.outputfile)
+	fileContent, err := os.ReadFile(h.outputfile)
 	if err != nil {
 		return err
 	}
