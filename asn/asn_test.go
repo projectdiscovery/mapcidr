@@ -1,10 +1,10 @@
 package asn
 
 import (
-	"io/ioutil"
-	"strings"
+	"os"
 	"testing"
 
+	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
 )
 
@@ -73,9 +73,9 @@ func TestASNClient_GetIPAddressesAsStream(t *testing.T) {
 			result = append(result, ip)
 		}
 		// read the expectedOutputFile
-		fileContent, err := ioutil.ReadFile(tt.expectedOutputFile)
+		fileContent, err := os.ReadFile(tt.expectedOutputFile)
 		require.Nil(t, err, "could not read the expectedOutputFile file")
-		items := strings.Split(string(fileContent), "\n")
+		items := stringsutil.SplitAny(string(fileContent), "\n", "\r")
 
 		require.ElementsMatch(t, items, result, "could not get correct cidrs")
 	}

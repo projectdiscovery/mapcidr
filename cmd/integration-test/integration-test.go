@@ -12,12 +12,11 @@ var (
 	debug      = os.Getenv("DEBUG") == "true"
 	customTest = os.Getenv("TEST")
 	errored    = false
+	success    = aurora.Green("[✓]").String()
+	failed     = aurora.Red("[✘]").String()
 )
 
 func main() {
-	success := aurora.Green("[✓]").String()
-	failed := aurora.Red("[✘]").String()
-
 	for name, testCase := range mapcidrTestcases {
 		if customTest != "" && !strings.Contains(name, customTest) {
 			continue // only run tests user asked
