@@ -244,8 +244,8 @@ github.com/projectdiscovery/blackrock v0.0.0-20221025011524-9e4efe804fb4/go.mod 
 github.com/projectdiscovery/fileutil v0.0.0-20220308101036-16c79af1cf5d/go.mod h1:Pm0f+MWgDFMSSI9NBedNh48LyYPs8gD3Jd8DXGmp4aQ=
 github.com/projectdiscovery/fileutil v0.0.3 h1:GSsoey4p8ZHIRxWF2VXh4mhLr+wfEkpJwvF0Dxpn/gg=
 github.com/projectdiscovery/fileutil v0.0.3/go.mod h1:GLejWd3YerG3RNYD/Hk2pJlytlYRgHdkWfWUAdCH2YQ=
-github.com/projectdiscovery/goflags v0.1.5 h1:zqZvIKAdSC62e5jv5UDgBWyP61KrLHxxUXjH/MAJlB4=
-github.com/projectdiscovery/goflags v0.1.5/go.mod h1:mms5rLXW0+jjbFFTyl/4t9VwtP5TCE+1Y1pReezluAI=
+github.com/projectdiscovery/goflags v0.1.6 h1:EXigzX4lJmn/fLMnULdc03O7WW+DjiYZhNgdGvfg+Z4=
+github.com/projectdiscovery/goflags v0.1.6/go.mod h1:yILgA7gbrHuTpIvMfikbivzoxkyxBD1Y5/PRHiGTIFk=
 github.com/projectdiscovery/gologger v1.0.1/go.mod h1:Ok+axMqK53bWNwDSU1nTNwITLYMXMdZtRc8/y1c7sWE=
 github.com/projectdiscovery/gologger v1.1.4/go.mod h1:Bhb6Bdx2PV1nMaFLoXNBmHIU85iROS9y1tBuv7T5pMY=
 github.com/projectdiscovery/gologger v1.1.5 h1:CT2Jrpzusca+dwNREMMz4RnAreJ0RqaISRU4SBcZC+M=
@@ -272,8 +272,8 @@ github.com/projectdiscovery/sliceutil v0.0.1/go.mod h1:0wBmhU5uTDwMfrEZfvwH9qa5k
 github.com/projectdiscovery/stringsutil v0.0.0-20220208075244-7c05502ca8e9/go.mod h1:oTRc18WBv9t6BpaN9XBY+QmG28PUpsyDzRht56Qf49I=
 github.com/projectdiscovery/stringsutil v0.0.2 h1:uzmw3IVLJSMW1kEg8eCStG/cGbYYZAja8BH3LqqJXMA=
 github.com/projectdiscovery/stringsutil v0.0.2/go.mod h1:EJ3w6bC5fBYjVou6ryzodQq37D5c6qbAYQpGmAy+DC0=
-github.com/projectdiscovery/utils v0.0.3 h1:pAjZTGYpnATRc6uaNACdiHv4joZ0Ml7Wpu0dudpcGfM=
-github.com/projectdiscovery/utils v0.0.3/go.mod h1:ne3eSlZlUKuhjHr8FfsfGcGteCzxcbJvFBx4VDBCxK0=
+github.com/projectdiscovery/utils v0.0.4-0.20221214110533-9f95ee986a54 h1:/fZvw6gT1fzdmMLMBBw75OrJ0Z6g7dulQrxM9FRp1qU=
+github.com/projectdiscovery/utils v0.0.4-0.20221214110533-9f95ee986a54/go.mod h1:PCwA5YuCYWPgHaGiZmr53/SA9iGQmAnw7DSHuhr8VPQ=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
 github.com/rogpeppe/go-internal v1.9.0 h1:73kH8U+JUqXU8lRuOHeVHaa/SZPifC7BkcraZVejAe8=
 github.com/rogpeppe/go-internal v1.9.0/go.mod h1:WtVeX8xhTBvf0smdhujwtBcq4Qrzq/fJaraNFVN+nFs=
