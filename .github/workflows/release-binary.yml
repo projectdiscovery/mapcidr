@@ -1,32 +1,36 @@
-name: 🎉 Release Binary
+name: 🔖 Auto release
 
 on:
-  create:
-    tags:
-      - v*
   workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * 0'
 
-jobs: 
-  release: 
+jobs:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: "Check out code"
+      - name: Check out code
         uses: actions/checkout@v3
-        with: 
+        with:
           fetch-depth: 0
+    
+      - name: Get Commit Count
+        id: get_commit
+        run: git rev-list  `git rev-list --tags --no-walk --max-count=1`..HEAD --count | xargs -I {} echo COMMIT_COUNT={} >> $GITHUB_OUTPUT
 
-      - name: "Set up Go"
-        uses: actions/setup-go@v3
+      - name: Create release and tag
+        if: ${{ steps.get_commit.outputs.COMMIT_COUNT > 0  }}
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v6.1
         with:
-          go-version: 1.18
+          github_token: ${{ secrets.GITHUB_TOKEN }}
 
-      - env:
-          GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}"
-          SLACK_WEBHOOK: "${{ secrets.RELEASE_SLACK_WEBHOOK }}"
-
-        name: "Create release on GitHub"
-        uses: goreleaser/goreleaser-action@v4
+      - name: Create a GitHub release
+        if: ${{ steps.get_commit.outputs.COMMIT_COUNT > 0  }}
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          args: "release --rm-dist"
-          version: latest
-          workdir: .
+          tag_name: ${{ steps.tag_version.outputs.new_tag }}
+          release_name: Release ${{ steps.tag_version.outputs.new_tag }}
+          body: ${{ steps.tag_version.outputs.changelog }}
