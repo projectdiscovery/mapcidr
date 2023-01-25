@@ -10,16 +10,15 @@ import (
 	"github.com/projectdiscovery/mapcidr"
 )
 
-var DefaultClient = New()
+var DefaultClient *ASNClient
 
 type ASNClient struct {
-	client *asnmap.Client
+	Client *asnmap.Client
 }
 
-func New() ASNClient {
-	return ASNClient{
-		client: asnmap.NewClient(),
-	}
+func init() {
+	DefaultClient = &ASNClient{}
+	DefaultClient.Client = asnmap.NewClient()
 }
 
 // GetCIDRsForASNNum returns the slice of cidrs for given ASN number
@@ -31,7 +30,7 @@ func (c *ASNClient) GetCIDRsForASNNum(value string) ([]*net.IPNet, error) {
 	}
 	// drop the AS suffix
 	asn := asnmap.ASN(value[2:])
-	for _, cidr := range asnmap.GetCIDR(c.client.GetData(asn)) {
+	for _, cidr := range asnmap.GetCIDR(c.Client.GetData(asn)) {
 		// filter IPv6 CIDR
 		if mapcidr.IsIPv4(cidr.IP) {
 			cidrs = append(cidrs, cidr)
