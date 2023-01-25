@@ -10,26 +10,18 @@ import (
 	"github.com/projectdiscovery/mapcidr"
 )
 
-type ASNClient struct {
-	client *asnmap.Client
-}
-
-func New() ASNClient {
-	return ASNClient{
-		client: asnmap.NewClient(),
-	}
-}
+var DefaultClient = asnmap.NewClient()
 
 // GetCIDRsForASNNum returns the slice of cidrs for given ASN number
 // accept the ASN number like 'AS15133' and returns the CIDRs for that ASN
-func (c *ASNClient) GetCIDRsForASNNum(value string) ([]*net.IPNet, error) {
+func GetCIDRsForASNNum(value string) ([]*net.IPNet, error) {
 	var cidrs []*net.IPNet
 	if len(value) < 3 {
 		return nil, fmt.Errorf("invalid asn number %s", value)
 	}
 	// drop the AS suffix
 	asn := asnmap.ASN(value[2:])
-	for _, cidr := range asnmap.GetCIDR(c.client.GetData(asn)) {
+	for _, cidr := range asnmap.GetCIDR(DefaultClient.GetData(asn)) {
 		// filter IPv6 CIDR
 		if mapcidr.IsIPv4(cidr.IP) {
 			cidrs = append(cidrs, cidr)
@@ -40,8 +32,8 @@ func (c *ASNClient) GetCIDRsForASNNum(value string) ([]*net.IPNet, error) {
 
 // GetIPAddressesAsStream returns the chan of IP address for given ASN number
 // returning the string chan for optimizing the memory
-func (c *ASNClient) GetIPAddressesAsStream(value string) (chan string, error) {
-	cidrs, err := c.GetCIDRsForASNNum(value)
+func GetIPAddressesAsStream(value string) (chan string, error) {
+	cidrs, err := GetCIDRsForASNNum(value)
 	if err != nil {
 		return nil, err
 	}
