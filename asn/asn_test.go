@@ -33,7 +33,7 @@ func Test_asnClient_GetCIDRsForASNNum(t *testing.T) {
 
 	for _, tt := range tests {
 		var result []string
-		got, err := GetCIDRsForASNNum(tt.asnNumber)
+		got, err := DefaultClient.GetCIDRsForASNNum(tt.asnNumber)
 		if err != nil {
 			require.ErrorContains(t, err, "invalid asn number")
 		}
@@ -63,7 +63,7 @@ func TestASNClient_GetIPAddressesAsStream(t *testing.T) {
 	}
 	for _, tt := range tests {
 		var result []string
-		got, err := GetIPAddressesAsStream(tt.asnNumber)
+		got, err := DefaultClient.GetIPAddressesAsStream(tt.asnNumber)
 		if err != nil {
 			require.ErrorContains(t, err, "invalid asn number")
 		}

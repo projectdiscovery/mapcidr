@@ -295,7 +295,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		hasSort       = options.SortAscending || options.SortDescending
 		ipRangeList   = make([][]net.IP, 0)
 		asnNumberList []string
-		asnClient     = asn.New()
+		asnClient     = asn.DefaultClient
 	)
 
 	ranger, _ = ipranger.New()
