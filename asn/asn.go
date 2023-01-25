@@ -13,12 +13,12 @@ import (
 var DefaultClient *ASNClient
 
 type ASNClient struct {
-	Client *asnmap.Client
+	client *asnmap.Client
 }
 
 func init() {
 	DefaultClient = &ASNClient{}
-	DefaultClient.Client = asnmap.NewClient()
+	DefaultClient.client = asnmap.NewClient()
 }
 
 // GetCIDRsForASNNum returns the slice of cidrs for given ASN number
@@ -30,7 +30,7 @@ func (c *ASNClient) GetCIDRsForASNNum(value string) ([]*net.IPNet, error) {
 	}
 	// drop the AS suffix
 	asn := asnmap.ASN(value[2:])
-	for _, cidr := range asnmap.GetCIDR(c.Client.GetData(asn)) {
+	for _, cidr := range asnmap.GetCIDR(c.client.GetData(asn)) {
 		// filter IPv6 CIDR
 		if mapcidr.IsIPv4(cidr.IP) {
 			cidrs = append(cidrs, cidr)
