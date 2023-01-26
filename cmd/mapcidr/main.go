@@ -366,7 +366,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	}
 
 	for _, asnNumber := range asnNumberList {
-		cidrs, err := asn.DefaultClient.GetCIDRsForASNNum(asnNumber)
+		cidrs, err := asn.GetCIDRsForASNNum(asnNumber)
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}
