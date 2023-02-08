@@ -24,7 +24,7 @@ jobs:
           DISCORD_WEBHOOK_TOKEN: "${{ secrets.DISCORD_WEBHOOK_TOKEN }}"
 
         name: "Create release on GitHub"
-        uses: goreleaser/goreleaser-action@v3
+        uses: goreleaser/goreleaser-action@v4
         with:
           args: "release --rm-dist"
           version: latest
