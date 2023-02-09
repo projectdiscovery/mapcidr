@@ -31,10 +31,11 @@ func GetCIDRsForASNNum(value string) ([]*net.IPNet, error) {
 	if err != nil {
 		return nil, fmt.Errorf("err %s", err)
 	}
+
+	var filteredCIDRs []*net.IPNet
 	for _, cidr := range cidrs {
-		// filter IPv6 CIDR
 		if mapcidr.IsIPv4(cidr.IP) {
-			cidrs = append(cidrs, cidr)
+			filteredCIDRs = append(filteredCIDRs, cidr)
 		}
 	}
 	return cidrs, nil
