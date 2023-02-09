@@ -38,7 +38,7 @@ func GetCIDRsForASNNum(value string) ([]*net.IPNet, error) {
 			filteredCIDRs = append(filteredCIDRs, cidr)
 		}
 	}
-	return cidrs, nil
+	return filteredCIDRs, nil
 }
 
 // GetIPAddressesAsStream returns the chan of IP address for given ASN number
