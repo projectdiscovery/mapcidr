@@ -4,5 +4,6 @@ cmd/mapcidr/mapcidr
 cmd/integration-test/mapcidr
 cmd/integration-test/integration-test
 integration_tests/mapcidr
-integration_tests/goldenfiles
+integration_tests/tests
 integration_tests/integration-test
+dist

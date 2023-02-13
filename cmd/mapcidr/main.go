@@ -12,14 +12,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/projectdiscovery/fileutil"
 	"github.com/projectdiscovery/goflags"
 	"github.com/projectdiscovery/gologger"
 	"github.com/projectdiscovery/gologger/levels"
 	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
 	asn "github.com/projectdiscovery/mapcidr/asn"
-	"github.com/projectdiscovery/sliceutil"
+	fileutil "github.com/projectdiscovery/utils/file"
+	sliceutil "github.com/projectdiscovery/utils/slice"
 )
 
 // Options contains cli options
@@ -55,12 +55,12 @@ const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.0.3
+/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.1.0
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const Version = `v1.0.3`
+const Version = `v1.1.0`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
@@ -295,7 +295,6 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		hasSort       = options.SortAscending || options.SortDescending
 		ipRangeList   = make([][]net.IP, 0)
 		asnNumberList []string
-		asnClient     = asn.New()
 	)
 
 	ranger, _ = ipranger.New()
@@ -367,7 +366,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	}
 
 	for _, asnNumber := range asnNumberList {
-		cidrs, err := asnClient.GetCIDRsForASNNum(asnNumber)
+		cidrs, err := asn.GetCIDRsForASNNum(asnNumber)
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}

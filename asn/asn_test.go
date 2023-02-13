@@ -1,10 +1,10 @@
 package asn
 
 import (
-	"io/ioutil"
-	"strings"
+	"os"
 	"testing"
 
+	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,11 +30,10 @@ func Test_asnClient_GetCIDRsForASNNum(t *testing.T) {
 			expected:  []string{},
 		},
 	}
-	asnClient := New()
 
 	for _, tt := range tests {
 		var result []string
-		got, err := asnClient.GetCIDRsForASNNum(tt.asnNumber)
+		got, err := GetCIDRsForASNNum(tt.asnNumber)
 		if err != nil {
 			require.ErrorContains(t, err, "invalid asn number")
 		}
@@ -54,18 +53,17 @@ func TestASNClient_GetIPAddressesAsStream(t *testing.T) {
 		{
 			name:               "ASN Number 1",
 			asnNumber:          "AS14421",
-			expectedOutputFile: "goldenfiles/AS14421.txt",
+			expectedOutputFile: "tests/AS14421.txt",
 		},
 		{
 			name:               "ASN Number 2",
 			asnNumber:          "AS134029",
-			expectedOutputFile: "goldenfiles/AS134029.txt",
+			expectedOutputFile: "tests/AS134029.txt",
 		},
 	}
-	asnClient := New()
 	for _, tt := range tests {
 		var result []string
-		got, err := asnClient.GetIPAddressesAsStream(tt.asnNumber)
+		got, err := GetIPAddressesAsStream(tt.asnNumber)
 		if err != nil {
 			require.ErrorContains(t, err, "invalid asn number")
 		}
@@ -73,9 +71,9 @@ func TestASNClient_GetIPAddressesAsStream(t *testing.T) {
 			result = append(result, ip)
 		}
 		// read the expectedOutputFile
-		fileContent, err := ioutil.ReadFile(tt.expectedOutputFile)
+		fileContent, err := os.ReadFile(tt.expectedOutputFile)
 		require.Nil(t, err, "could not read the expectedOutputFile file")
-		items := strings.Split(string(fileContent), "\n")
+		items := stringsutil.SplitAny(string(fileContent), "\n", "\r")
 
 		require.ElementsMatch(t, items, result, "could not get correct cidrs")
 	}

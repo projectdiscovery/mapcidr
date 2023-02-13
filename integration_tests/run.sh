@@ -8,15 +8,15 @@ echo "::endgroup::"
 echo "::group::Build mapcidr integration-test"
 cd ../integration-test
 go build
-cp -rf goldenfiles ../../integration_tests/
+cp -rf tests ../../integration_tests/
 mv integration-test ../../integration_tests/integration-test
 cd ../../integration_tests
 echo "::endgroup::"
+echo "::group::Running mapcidr integration-test"
 ./integration-test
 if [ $? -eq 0 ]
 then
-  rm integration-test mapcidr 2>/dev/null
-  exit 0
+  echo "Integration test passed"
 else
   rm integration-test mapcidr 2>/dev/null
   exit 1
