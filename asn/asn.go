@@ -13,7 +13,12 @@ import (
 var DefaultClient *asnmap.Client
 
 func init() {
-	DefaultClient, _ = asnmap.NewClient()
+	var err error
+	DefaultClient, err = asnmap.NewClient()
+	// DefaultClient must exist
+	if err != nil {
+		panic(err)
+	}
 }
 
 // GetCIDRsForASNNum returns the slice of cidrs for given ASN number
@@ -25,11 +30,11 @@ func GetCIDRsForASNNum(value string) ([]*net.IPNet, error) {
 	}
 	data, err := DefaultClient.GetData(value[2:])
 	if err != nil {
-		return nil, fmt.Errorf("err %s", err)
+		return nil, err
 	}
 	cidrs, err = asnmap.GetCIDR(data)
 	if err != nil {
-		return nil, fmt.Errorf("err %s", err)
+		return nil, err
 	}
 
 	var filteredCIDRs []*net.IPNet
