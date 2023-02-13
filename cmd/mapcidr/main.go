@@ -295,7 +295,6 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		hasSort       = options.SortAscending || options.SortDescending
 		ipRangeList   = make([][]net.IP, 0)
 		asnNumberList []string
-		asnClient     = asn.New()
 	)
 
 	ranger, _ = ipranger.New()
@@ -367,7 +366,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	}
 
 	for _, asnNumber := range asnNumberList {
-		cidrs, err := asnClient.GetCIDRsForASNNum(asnNumber)
+		cidrs, err := asn.GetCIDRsForASNNum(asnNumber)
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}

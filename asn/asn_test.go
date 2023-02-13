@@ -30,11 +30,10 @@ func Test_asnClient_GetCIDRsForASNNum(t *testing.T) {
 			expected:  []string{},
 		},
 	}
-	asnClient := New()
 
 	for _, tt := range tests {
 		var result []string
-		got, err := asnClient.GetCIDRsForASNNum(tt.asnNumber)
+		got, err := GetCIDRsForASNNum(tt.asnNumber)
 		if err != nil {
 			require.ErrorContains(t, err, "invalid asn number")
 		}
@@ -62,10 +61,9 @@ func TestASNClient_GetIPAddressesAsStream(t *testing.T) {
 			expectedOutputFile: "tests/AS134029.txt",
 		},
 	}
-	asnClient := New()
 	for _, tt := range tests {
 		var result []string
-		got, err := asnClient.GetIPAddressesAsStream(tt.asnNumber)
+		got, err := GetIPAddressesAsStream(tt.asnNumber)
 		if err != nil {
 			require.ErrorContains(t, err, "invalid asn number")
 		}
