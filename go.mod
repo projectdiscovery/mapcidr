@@ -9,8 +9,8 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.0-20221025011524-9e4efe804fb4
 	github.com/projectdiscovery/goflags v0.1.6
 	github.com/projectdiscovery/gologger v1.1.7
-	github.com/projectdiscovery/ipranger v0.0.4
-	github.com/projectdiscovery/utils v0.0.4-0.20221214110533-9f95ee986a54
+	github.com/projectdiscovery/ipranger v0.0.5
+	github.com/projectdiscovery/utils v0.0.7
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/exp v0.0.0-20221230185412-738e83a70c30
 )
@@ -48,7 +48,7 @@ require (
 	github.com/nwaples/rardecode v1.1.0 // indirect
 	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/projectdiscovery/hmap v0.0.6 // indirect
+	github.com/projectdiscovery/hmap v0.0.7 // indirect
 	github.com/projectdiscovery/iputil v0.0.2 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.2-0.20221025011504-22b13ce54fff // indirect
 	github.com/projectdiscovery/retryabledns v1.0.20 // indirect
