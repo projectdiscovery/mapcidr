@@ -10,7 +10,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.6
 	github.com/projectdiscovery/gologger v1.1.8
 	github.com/projectdiscovery/ipranger v0.0.5
-	github.com/projectdiscovery/utils v0.0.7
+	github.com/projectdiscovery/utils v0.0.15
 	github.com/stretchr/testify v1.8.1
 	golang.org/x/exp v0.0.0-20221230185412-738e83a70c30
 )
@@ -76,9 +76,9 @@ require (
 	go.uber.org/atomic v1.10.0 // indirect
 	go.uber.org/multierr v1.8.0 // indirect
 	golang.org/x/mod v0.6.0 // indirect
-	golang.org/x/net v0.5.0 // indirect
-	golang.org/x/sys v0.4.0 // indirect
-	golang.org/x/text v0.6.0 // indirect
+	golang.org/x/net v0.7.0 // indirect
+	golang.org/x/sys v0.5.0 // indirect
+	golang.org/x/text v0.7.0 // indirect
 	golang.org/x/tools v0.2.0 // indirect
 	google.golang.org/protobuf v1.28.1 // indirect
 	gopkg.in/djherbis/times.v1 v1.3.0 // indirect
