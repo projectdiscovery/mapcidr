@@ -1,4 +1,4 @@
-FROM golang:1.20.0-alpine AS build-env
+FROM golang:1.20.2-alpine AS build-env
 RUN go install -v github.com/projectdiscovery/mapcidr/cmd/mapcidr@latest
 
 FROM alpine:latest
