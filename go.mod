@@ -11,7 +11,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.8
 	github.com/projectdiscovery/ipranger v0.0.5
 	github.com/projectdiscovery/utils v0.0.15-0.20230312150239-2528d5ff811d
-	github.com/stretchr/testify v1.8.1
+	github.com/stretchr/testify v1.8.2
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
 
