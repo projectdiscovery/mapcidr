@@ -89,6 +89,10 @@ MISCELLANEOUS:
    -si, -shuffle-ip           Shuffle Input IPs in random order
    -sp, -shuffle-port string  Shuffle Input IP:Port in random order
 
+UPDATE:
+   -up, -update                 update mapcidr to latest version
+   -duc, -disable-update-check  disable automatic mapcidr update check
+   
 OUTPUT:
    -verbose            Verbose mode
    -o, -output string  File to write output to

@@ -20,6 +20,7 @@ import (
 	asn "github.com/projectdiscovery/mapcidr/asn"
 	fileutil "github.com/projectdiscovery/utils/file"
 	sliceutil "github.com/projectdiscovery/utils/slice"
+	updateutils "github.com/projectdiscovery/utils/update"
 )
 
 // Options contains cli options
@@ -49,26 +50,32 @@ type Options struct {
 	IPFormats             goflags.StringSlice
 	ZeroPadNumberOfZeroes int
 	ZeroPadPermute        bool
+	DisableUpdateCheck    bool
 }
 
 const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.1.0
+/_/_/_/\_,_/ .__/\___/___/____/_/|_|
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const Version = `v1.1.0`
+const version = `v1.1.1`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
 	gologger.Print().Msgf("%s\n", banner)
 	gologger.Print().Msgf("\t\tprojectdiscovery.io\n\n")
+}
 
-	gologger.Print().Msgf("Use with caution. You are responsible for your actions\n")
-	gologger.Print().Msgf("Developers assume no liability and are not responsible for any misuse or damage.\n")
+// GetUpdateCallback returns a callback function that updates mapcidr
+func GetUpdateCallback() func() {
+	return func() {
+		showBanner()
+		updateutils.GetUpdateToolCallback("mapcidr", version)()
+	}
 }
 
 // ParseOptions parses the command line options for application
@@ -114,6 +121,12 @@ func ParseOptions() *Options {
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle Input IP:Port in random order"),
 	)
 
+	//Update
+	flagSet.CreateGroup("update", "Update",
+		flagSet.CallbackVarP(GetUpdateCallback(), "update", "up", "update mapcidr to latest version"),
+		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic mapcidr update check"),
+	)
+
 	// Output
 	flagSet.CreateGroup("output", "Output",
 		flagSet.BoolVar(&options.Verbose, "verbose", false, "Verbose mode"),
@@ -132,8 +145,19 @@ func ParseOptions() *Options {
 	showBanner()
 
 	if options.Version {
-		gologger.Info().Msgf("Current Version: %s\n", Version)
+		gologger.Info().Msgf("Current Version: %s\n", version)
 		os.Exit(0)
+	}
+
+	if !options.DisableUpdateCheck {
+		latestVersion, err := updateutils.GetVersionCheckCallback("mapcidr")()
+		if err != nil {
+			if options.Verbose {
+				gologger.Error().Msgf("mapcidr version check failed: %v", err.Error())
+			}
+		} else {
+			gologger.Info().Msgf("Current mapcidr version %v %v", version, updateutils.GetVersionDescription(version, latestVersion))
+		}
 	}
 
 	// enable shuffling if ports are specified
