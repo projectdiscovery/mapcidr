@@ -57,20 +57,17 @@ const banner = `
                    ____________  ___    
   __ _  ___ ____  / ___/  _/ _ \/ _ \   
  /  ' \/ _ '/ _ \/ /___/ // // / , _/   
-/_/_/_/\_,_/ .__/\___/___/____/_/|_| v1.1.0
+/_/_/_/\_,_/ .__/\___/___/____/_/|_|
           /_/                                                     	 
 `
 
 // Version is the current version of mapcidr
-const version = `v1.1.0`
+const version = `v1.1.1`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
 	gologger.Print().Msgf("%s\n", banner)
 	gologger.Print().Msgf("\t\tprojectdiscovery.io\n\n")
-
-	gologger.Print().Msgf("Use with caution. You are responsible for your actions\n")
-	gologger.Print().Msgf("Developers assume no liability and are not responsible for any misuse or damage.\n")
 }
 
 // GetUpdateCallback returns a callback function that updates mapcidr
