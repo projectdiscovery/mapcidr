@@ -14,12 +14,6 @@ builds:
       goarch: arm
     - goos: windows
       goarch: arm64
-  
-# release options (https://goreleaser.com/customization/release/)
-
-release:
-  draft: true
-  prerelease: auto
 
 archives:
 - format: zip
