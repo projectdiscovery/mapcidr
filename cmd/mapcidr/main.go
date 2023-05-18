@@ -62,7 +62,7 @@ const banner = `
 `
 
 // Version is the current version of mapcidr
-const version = `v1.1.1`
+const version = `v1.1.2`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
@@ -150,7 +150,7 @@ func ParseOptions() *Options {
 	}
 
 	if !options.DisableUpdateCheck {
-		latestVersion, err := updateutils.GetVersionCheckCallback("mapcidr")()
+		latestVersion, err := updateutils.GetToolVersionCallback("mapcidr", version)()
 		if err != nil {
 			if options.Verbose {
 				gologger.Error().Msgf("mapcidr version check failed: %v", err.Error())
