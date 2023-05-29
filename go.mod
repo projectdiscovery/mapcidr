@@ -10,8 +10,8 @@ require (
 	github.com/projectdiscovery/goflags v0.1.8
 	github.com/projectdiscovery/gologger v1.1.10
 	github.com/projectdiscovery/ipranger v0.0.6
-	github.com/projectdiscovery/utils v0.0.32
-	github.com/stretchr/testify v1.8.2
+	github.com/projectdiscovery/utils v0.0.34
+	github.com/stretchr/testify v1.8.3
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
 
@@ -44,7 +44,7 @@ require (
 	github.com/mattn/go-isatty v0.0.17 // indirect
 	github.com/mattn/go-runewidth v0.0.14 // indirect
 	github.com/mholt/archiver v3.1.1+incompatible // indirect
-	github.com/microcosm-cc/bluemonday v1.0.23 // indirect
+	github.com/microcosm-cc/bluemonday v1.0.24 // indirect
 	github.com/miekg/dns v1.1.54 // indirect
 	github.com/minio/selfupdate v0.6.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
