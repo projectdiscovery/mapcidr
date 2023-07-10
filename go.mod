@@ -8,7 +8,7 @@ require (
 	github.com/projectdiscovery/asnmap v1.0.4
 	github.com/projectdiscovery/blackrock v0.0.1
 	github.com/projectdiscovery/goflags v0.1.8
-	github.com/projectdiscovery/gologger v1.1.10
+	github.com/projectdiscovery/gologger v1.1.11
 	github.com/projectdiscovery/ipranger v0.0.6
 	github.com/projectdiscovery/utils v0.0.32
 	github.com/stretchr/testify v1.8.2
@@ -51,9 +51,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.1 // indirect
-	github.com/nwaples/rardecode v1.1.0 // indirect
+	github.com/nwaples/rardecode v1.1.3 // indirect
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
-	github.com/pierrec/lz4 v2.6.0+incompatible // indirect
+	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/hmap v0.0.11 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.5 // indirect
@@ -70,7 +70,7 @@ require (
 	github.com/tidwall/pretty v1.2.1 // indirect
 	github.com/tidwall/rtred v0.1.2 // indirect
 	github.com/tidwall/tinyqueue v0.1.1 // indirect
-	github.com/ulikunitz/xz v0.5.8 // indirect
+	github.com/ulikunitz/xz v0.5.11 // indirect
 	github.com/xi2/xz v0.0.0-20171230120015-48954b6210f8 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
 	github.com/yuin/goldmark v1.5.4 // indirect
