@@ -508,6 +508,11 @@ func CoalesceCIDRs(cidrs []*net.IPNet) (coalescedIPV4, coalescedIPV6 []*net.IPNe
 }
 
 func AggregateApproxIPV4s(ips []*net.IPNet) (approxIPs []*net.IPNet) {
+	
+	sort.Slice(ips, func(i, j int) bool {
+		return bytes.Compare(ips[i].IP, ips[j].IP) < 0
+	})
+	
 	cidrs := make(map[string]*net.IPNet)
 
 	for _, ip := range ips {
@@ -538,9 +543,6 @@ func AggregateApproxIPV4s(ips []*net.IPNet) (approxIPs []*net.IPNet) {
 		index++
 	}
 
-	sort.Slice(approxIPs, func(i, j int) bool {
-		return bytes.Compare(approxIPs[i].IP, approxIPs[j].IP) < 0
-	})
 
 	return approxIPs
 }
