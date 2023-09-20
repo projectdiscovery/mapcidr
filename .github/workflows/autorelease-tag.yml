@@ -26,7 +26,7 @@ jobs:
 
       - name: Create local changes
         run: |
-          git add internal/runner/banner.go
+          git add cmd/mapcidr/main.go
 
       - name: Commit files
         run: |
