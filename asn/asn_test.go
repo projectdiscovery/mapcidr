@@ -4,30 +4,31 @@ import (
 	"os"
 	"testing"
 
+	sliceutil "github.com/projectdiscovery/utils/slice"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 	"github.com/stretchr/testify/require"
 )
 
 func Test_asnClient_GetCIDRsForASNNum(t *testing.T) {
 	tests := []struct {
-		name      string
-		asnNumber string
-		expected  []string
+		name                string
+		asnNumber           string
+		potentiallyExpected [][]string
 	}{
 		{
-			name:      "ASN Number 1",
-			asnNumber: "AS14421",
-			expected:  []string{"216.101.17.0/24"},
+			name:                "ASN Number 1",
+			asnNumber:           "AS14421",
+			potentiallyExpected: [][]string{{"216.101.17.0/24"}},
 		},
 		{
-			name:      "ASN Number 2",
-			asnNumber: "AS7712",
-			expected:  []string{"118.67.200.0/23", "118.67.202.0/24", "118.67.203.0/24", "118.67.204.0/22"},
+			name:                "ASN Number 2",
+			asnNumber:           "AS7712",
+			potentiallyExpected: [][]string{{"118.67.200.0/23", "118.67.202.0/24", "118.67.203.0/24", "118.67.204.0/22"}, {"118.67.200.0/21"}},
 		},
 		{
-			name:      "Wrong ASN number",
-			asnNumber: "AS",
-			expected:  []string{},
+			name:                "Wrong ASN number",
+			asnNumber:           "AS",
+			potentiallyExpected: [][]string{{}},
 		},
 	}
 
@@ -40,7 +41,13 @@ func Test_asnClient_GetCIDRsForASNNum(t *testing.T) {
 		for _, cidr := range got {
 			result = append(result, cidr.String())
 		}
-		require.ElementsMatch(t, tt.expected, result, "could not get correct cidrs")
+		var found bool
+		for _, expected := range tt.potentiallyExpected {
+			found = found || sliceutil.ElementsMatch(expected, result)
+		}
+		if !found {
+			t.Errorf("could not get correct cidrs: %v %v", tt.potentiallyExpected, result)
+		}
 	}
 }
 
