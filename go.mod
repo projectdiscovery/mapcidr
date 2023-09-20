@@ -55,7 +55,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/projectdiscovery/hmap v0.0.11 // indirect
+	github.com/projectdiscovery/hmap v0.0.19 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.5 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.24 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.15 // indirect
@@ -63,7 +63,7 @@ require (
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/syndtr/goleveldb v1.0.0 // indirect
 	github.com/tidwall/btree v1.6.0 // indirect
-	github.com/tidwall/buntdb v1.2.10 // indirect
+	github.com/tidwall/buntdb v1.3.0 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
 	github.com/tidwall/grect v0.1.4 // indirect
 	github.com/tidwall/match v1.1.1 // indirect
