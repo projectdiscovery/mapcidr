@@ -6,7 +6,7 @@ on:
     - cron: "0 0 * * 0"
 
 jobs:
-  build:
+  version:
     runs-on: ubuntu-latest
     steps:
       - name: Check out code
@@ -34,6 +34,19 @@ jobs:
           git add cmd/mapcidr/main.go -f
           git commit -am "Bump version"
           git push origin HEAD:${{ github.ref }}
+
+  create:
+    runs-on: ubuntu-latest
+    needs: version
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+
+      - name: Get Commit Count
+        id: get_commit
+        run: git rev-list  `git rev-list --tags --no-walk --max-count=1`..HEAD --count | xargs -I {} echo COMMIT_COUNT={} >> $GITHUB_OUTPUT
 
       - name: Create release and tag
         if: ${{ steps.get_commit.outputs.COMMIT_COUNT > 0  }}
