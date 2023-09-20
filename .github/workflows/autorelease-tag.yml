@@ -22,7 +22,7 @@ jobs:
       - name: Bump version in banner.go
         run: |
           curl -LO https://raw.githubusercontent.com/projectdiscovery/utils/main/scripts/versionbump/versionbump.go
-          go run versionbump.go -file internal/runner/banner.go -var version -part patch
+          go run versionbump.go -file cmd/mapcidr/main.go -var version -part patch
 
       - name: Create local changes
         run: |
