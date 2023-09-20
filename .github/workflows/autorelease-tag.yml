@@ -33,7 +33,7 @@ jobs:
       - name: Create local changes
         if: ${{ steps.get_commit.outputs.COMMIT_COUNT > 0  }}
         run: |
-          git add cmd/mapcidr/main.go
+          git add cmd/mapcidr/main.go -f
 
       - name: Commit files
         if: ${{ steps.get_commit.outputs.COMMIT_COUNT > 0  }}
