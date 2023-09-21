@@ -1,0 +1,36 @@
+name: Bump Version
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "55 23 * * 0"
+
+jobs:
+  version_bump:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get Commit Count
+        id: get_commit
+        run: git rev-list  `git rev-list --tags --no-walk --max-count=1`..HEAD --count | xargs -I {} echo COMMIT_COUNT={} >> $GITHUB_OUTPUT
+
+      - name: Set up Go
+        if: ${{ steps.get_commit.outputs.COMMIT_COUNT > 0  }}
+        uses: actions/setup-go@v4
+        with:
+          go-version: 1.20.x
+
+      - name: Bump version and push
+        if: ${{ steps.get_commit.outputs.COMMIT_COUNT > 0  }}
+        run: |
+          curl -LO https://raw.githubusercontent.com/projectdiscovery/utils/main/scripts/versionbump/versionbump.go
+          go run versionbump.go -file cmd/mapcidr/main.go -var version -part patch
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add cmd/mapcidr/main.go -f
+          git commit -am "Bump version"
+          git push origin HEAD:${{ github.ref }}
