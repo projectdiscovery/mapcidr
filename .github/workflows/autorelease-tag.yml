@@ -45,7 +45,10 @@ jobs:
           fetch-depth: 0
 
       - name: Pull latest changes
-        run: git pull origin HEAD:${{ github.ref }}
+        run: |
+          git log -1
+          git pull
+          git log -1
 
       - name: Get Commit Count
         id: get_commit
