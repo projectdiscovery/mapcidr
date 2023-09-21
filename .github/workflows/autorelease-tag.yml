@@ -44,12 +44,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Pull latest changes
-        run: |
-          git log -1
-          git pull
-          git log -1
-
       - name: Get Commit Count
         id: get_commit
         run: git rev-list  `git rev-list --tags --no-walk --max-count=1`..HEAD --count | xargs -I {} echo COMMIT_COUNT={} >> $GITHUB_OUTPUT
