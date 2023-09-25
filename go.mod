@@ -7,7 +7,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.0.5
 	github.com/projectdiscovery/blackrock v0.0.1
-	github.com/projectdiscovery/goflags v0.1.20
+	github.com/projectdiscovery/goflags v0.1.21
 	github.com/projectdiscovery/gologger v1.1.11
 	github.com/projectdiscovery/ipranger v0.0.13
 	github.com/projectdiscovery/utils v0.0.55
