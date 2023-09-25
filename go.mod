@@ -54,7 +54,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/projectdiscovery/hmap v0.0.19 // indirect
+	github.com/projectdiscovery/hmap v0.0.20 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.6 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.35 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
