@@ -30,7 +30,7 @@ func TestIpEncodings(t *testing.T) {
 	res = AlterIP(ip, []string{"4"}, 0, false)
 	require.True(t, sliceutil.ContainsItems(res, []string{"0x7f.0x0.0x0.0x1", "0x7f000001"}))
 	res = AlterIP(ip, []string{"5"}, 0, false)
-	require.Equal(t, []string{"281472812449793"}, res)
+	require.Equal(t, []string{"2130706433"}, res)
 	res = AlterIP(ip, []string{"6"}, 0, false)
 	require.Equal(t, []string{"111111111111111101111111000000000000000000000001"}, res)
 	res = AlterIP(ip, []string{"7"}, 0, false)
