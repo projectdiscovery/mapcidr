@@ -299,17 +299,22 @@ func IpAddresses(ipnet *net.IPNet) (ips chan string) {
 // IPToInteger converts an IP address to its integer representation.
 // It supports both IPv4 as well as IPv6 addresses.
 func IPToInteger(ip net.IP) (*big.Int, int, error) {
-	val := &big.Int{}
-	val.SetBytes([]byte(ip))
+	val := new(big.Int)
 
-	if len(ip) == net.IPv4len {
-		return val, 32, nil //nolint
-	} else if len(ip) == net.IPv6len {
-		return val, 128, nil //nolint
-	} else {
-		return nil, 0, fmt.Errorf("unsupported address length %d", len(ip))
+	if ipv4 := ip.To4(); ipv4 != nil { // Iff ipv4, convert to 4 byte representation
+		val.SetBytes(ipv4)
+		return val, 32, nil
 	}
+
+	if ipv6 := ip.To16(); ipv6 != nil { // Iff ipv6, convert to 16 byte representation
+		val.SetBytes(ipv6)
+		return val, 128, nil
+	}
+
+	return nil, 0, fmt.Errorf("unsupported IP address format")
 }
+
+
 
 // IntegerToIP converts an Integer IP address to net.IP format.
 func IntegerToIP(ipInt *big.Int, bits int) net.IP {
