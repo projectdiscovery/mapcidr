@@ -9,7 +9,7 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.1
 	github.com/projectdiscovery/goflags v0.1.24
 	github.com/projectdiscovery/gologger v1.1.11
-	github.com/projectdiscovery/ipranger v0.0.16
+	github.com/projectdiscovery/ipranger v0.0.18
 	github.com/projectdiscovery/utils v0.0.58
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
@@ -55,7 +55,7 @@ require (
 	github.com/olekukonko/tablewriter v0.0.5 // indirect
 	github.com/pierrec/lz4 v2.6.1+incompatible // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/projectdiscovery/hmap v0.0.22 // indirect
+	github.com/projectdiscovery/hmap v0.0.23 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.6 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.39 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
