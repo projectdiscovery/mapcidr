@@ -9,7 +9,7 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.1
 	github.com/projectdiscovery/goflags v0.1.26
 	github.com/projectdiscovery/gologger v1.1.11
-	github.com/projectdiscovery/ipranger v0.0.16
+	github.com/projectdiscovery/ipranger v0.0.19
 	github.com/projectdiscovery/utils v0.0.62
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
@@ -32,7 +32,6 @@ require (
 	github.com/dlclark/regexp2 v1.8.1 // indirect
 	github.com/dsnet/compress v0.0.1 // indirect
 	github.com/fatih/color v1.15.0 // indirect
-	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-github/v30 v30.1.0 // indirect
