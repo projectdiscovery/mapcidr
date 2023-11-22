@@ -287,7 +287,9 @@ func ipNetToRange(ipNet net.IPNet) netWithRange {
 	for i := range lastIPMask {
 		index := len(lastIPMask) - 1 - i
 		lastIPMask[index] = ^lastIPMask[index]
-		lastIP[index] |= lastIPMask[index]
+		if net.IPv6len-i-1 < len(lastIP) {
+			lastIP[net.IPv6len-i-1] |= lastIPMask[index]
+		}
 	}
 
 	return netWithRange{First: &firstIP, Last: &lastIP, Network: &ipNet}
