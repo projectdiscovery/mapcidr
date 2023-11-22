@@ -284,7 +284,7 @@ func ipNetToRange(ipNet net.IPNet) netWithRange {
 
 	lastIPMask := make(net.IPMask, len(ipNet.Mask))
 	copy(lastIPMask, ipNet.Mask)
-	for i := 0; i < len(lastIPMask); i++ {
+	for i := range lastIPMask {
 		index := len(lastIPMask) - 1 - i
 		lastIPMask[index] = ^lastIPMask[index]
 		lastIP[index] |= lastIPMask[index]
