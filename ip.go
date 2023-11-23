@@ -285,8 +285,11 @@ func ipNetToRange(ipNet net.IPNet) netWithRange {
 	lastIPMask := make(net.IPMask, len(ipNet.Mask))
 	copy(lastIPMask, ipNet.Mask)
 	for i := range lastIPMask {
-		lastIPMask[len(lastIPMask)-i-1] = ^lastIPMask[len(lastIPMask)-i-1]
-		lastIP[net.IPv6len-i-1] |= lastIPMask[len(lastIPMask)-i-1]
+		index := len(lastIPMask) - 1 - i
+		lastIPMask[index] = ^lastIPMask[index]
+		if net.IPv6len-i-1 < len(lastIP) {
+			lastIP[net.IPv6len-i-1] |= lastIPMask[index]
+		}
 	}
 
 	return netWithRange{First: &firstIP, Last: &lastIP, Network: &ipNet}
