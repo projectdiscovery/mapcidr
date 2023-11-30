@@ -301,20 +301,20 @@ func IpAddresses(ipnet *net.IPNet) (ips chan string) {
 func IPToInteger(ip net.IP) (*big.Int, int, error) {
 	val := new(big.Int)
 
-	if ipv4 := ip.To4(); ipv4 != nil { // Iff ipv4, convert to 4 byte representation
+	// check if the ip is v4 => convert to 4 bytes representation
+	if ipv4 := ip.To4(); ipv4 != nil {
 		val.SetBytes(ipv4)
 		return val, 32, nil
 	}
 
-	if ipv6 := ip.To16(); ipv6 != nil { // Iff ipv6, convert to 16 byte representation
+	// check if the ip is v6 => convert to 16 bytes representation
+	if ipv6 := ip.To16(); ipv6 != nil {
 		val.SetBytes(ipv6)
 		return val, 128, nil
 	}
 
 	return nil, 0, fmt.Errorf("unsupported IP address format")
 }
-
-
 
 // IntegerToIP converts an Integer IP address to net.IP format.
 func IntegerToIP(ipInt *big.Int, bits int) net.IP {
