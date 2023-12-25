@@ -143,8 +143,8 @@ github.com/projectdiscovery/gologger v1.1.12 h1:uX/QkQdip4PubJjjG0+uk5DtyAi1ANPJ
 github.com/projectdiscovery/gologger v1.1.12/go.mod h1:DI8nywPLERS5mo8QEA9E7gd5HZ3Je14SjJBH3F5/kLw=
 github.com/projectdiscovery/hmap v0.0.31 h1:vJDZD+VUHzKtFbmF8z75WPwNv9zFpje2F63RAwa3Hjw=
 github.com/projectdiscovery/hmap v0.0.31/go.mod h1:FeBmGo9wqgTLd+F/tPOPEoFg6MTn+ynhGSNtWA0/pSk=
-github.com/projectdiscovery/ipranger v0.0.25 h1:he+lI9Z/cdAmGVSFRAbQBVAF7J/k0XcVIzcRc7F0bTQ=
-github.com/projectdiscovery/ipranger v0.0.25/go.mod h1:2T16yqPvrfYU/AwxZE9DlNlNIXx1mTw3NFBM7Oou7qY=
+github.com/projectdiscovery/ipranger v0.0.26 h1:Wl/oNDUA+pI4+matUDzGWgsyy1PRyCQO1j1Nwi6ijwY=
+github.com/projectdiscovery/ipranger v0.0.26/go.mod h1:S/wxu+SqL2HO3NdN3EA8ZJSvfvti46/v4fDg9TKZoDQ=
 github.com/projectdiscovery/networkpolicy v0.0.6 h1:yDvm0XCrS9HeemRrBS+J+22surzVczM94W5nHiOy/1o=
 github.com/projectdiscovery/networkpolicy v0.0.6/go.mod h1:8HJQ/33Pi7v3a3MRWIQGXzpj+zHw2d60TysEL4qdoQk=
 github.com/projectdiscovery/retryabledns v1.0.48 h1:7m4aB5IK3P6UKkA4abBxerJYApzP4yraXj4Ju8kZ9zU=
