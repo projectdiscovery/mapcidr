@@ -58,7 +58,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/projectdiscovery/hmap v0.0.32 // indirect
-	github.com/projectdiscovery/networkpolicy v0.0.6 // indirect
+	github.com/projectdiscovery/networkpolicy v0.0.7 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.49 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
