@@ -9,7 +9,7 @@ require (
 	github.com/projectdiscovery/blackrock v0.0.1
 	github.com/projectdiscovery/goflags v0.1.34
 	github.com/projectdiscovery/gologger v1.1.12
-	github.com/projectdiscovery/ipranger v0.0.27
+	github.com/projectdiscovery/ipranger v0.0.28
 	github.com/projectdiscovery/utils v0.0.70
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
