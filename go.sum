@@ -148,8 +148,8 @@ github.com/projectdiscovery/ipranger v0.0.29 h1:7LpOriSujlV26HyI9O4jTbaww84qH1py
 github.com/projectdiscovery/ipranger v0.0.29/go.mod h1:j12bsmHG3yFTSWy9zYSMsCM9huoG0Z89Y49yJSgH0QM=
 github.com/projectdiscovery/networkpolicy v0.0.7 h1:AwHqBRXBqDQgnWzBMuoJtHBNEYBw+NFp/4qIK688x7o=
 github.com/projectdiscovery/networkpolicy v0.0.7/go.mod h1:CK0CnFoLF1Nou6mY7P4WODSAxhPN8g8g7XpapgEP8tI=
-github.com/projectdiscovery/retryabledns v1.0.51 h1:bX/apiRGZwhASBAT7o3qmZ0FznuBlHQlIQdCw1TAzcg=
-github.com/projectdiscovery/retryabledns v1.0.51/go.mod h1:rFu1zc7HLHPEipuF91ZNMT1yGG0FKBVUnxnqLJ4OhF4=
+github.com/projectdiscovery/retryabledns v1.0.52 h1:jJRIT5y7KYZvaZAAvlkxvkKkQzst6LvEeLDqRc3LeOM=
+github.com/projectdiscovery/retryabledns v1.0.52/go.mod h1:Ea478e6XNVAmfH4KwqtLNjkwdgkpVH1O3+FL2dKLNb8=
 github.com/projectdiscovery/utils v0.0.73 h1:KWzxzJv9U5YKHGGOvkKHJmO7NdV5Kbzc8lPt+Frdj0o=
 github.com/projectdiscovery/utils v0.0.73/go.mod h1:SEb3ZoGy1nxdnPNXAGhMZNhRcokRkoMEjC6l9H59t1s=
 github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
