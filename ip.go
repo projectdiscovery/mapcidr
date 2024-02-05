@@ -512,12 +512,22 @@ func CoalesceCIDRs(cidrs []*net.IPNet) (coalescedIPV4, coalescedIPV6 []*net.IPNe
 }
 
 func AggregateApproxIPs(ips []*net.IPNet) ([]*net.IPNet, error) {
+	if len(ips) < 2 {
+		return nil, errors.New("no enough ip to aggregate")
+	}
 	sort.Slice(ips, func(i, j int) bool {
 		return bytes.Compare(ips[i].IP, ips[j].IP) < 0
 	})
 	// Parse IP addresses
 	ip1 := ips[0].IP
 	ip2 := ips[len(ips)-1].IP
+
+	bothIPv4 := IsIPv4(ip1) && IsIPv4(ip2)
+	bothIPv6 := IsIPv6(ip1) && IsIPv6(ip2)
+
+	if !bothIPv4 && !bothIPv6 {
+		return nil, errors.New("mismatching ip type")
+	}
 
 	if ip1 == nil || ip2 == nil {
 		return nil, errors.New("invalid IP address")
