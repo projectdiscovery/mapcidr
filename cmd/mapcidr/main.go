@@ -455,7 +455,8 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	}
 
 	if options.AggregateApprox {
-		for _, cidr := range mapcidr.AggregateApproxIPV4s(allCidrs) {
+		ipnet, _ := mapcidr.AggregateApproxIPs(allCidrs)
+		for _, cidr := range ipnet {
 			outputchan <- cidr.String()
 		}
 	}
