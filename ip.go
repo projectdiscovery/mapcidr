@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"math/big"
 	"net"
+	"net/netip"
 	"regexp"
 	"sort"
 	"strconv"
@@ -510,45 +511,49 @@ func CoalesceCIDRs(cidrs []*net.IPNet) (coalescedIPV4, coalescedIPV6 []*net.IPNe
 	return
 }
 
-func AggregateApproxIPV4s(ips []*net.IPNet) (approxIPs []*net.IPNet) {
+func AggregateApproxIPs(ips []*net.IPNet) ([]*net.IPNet, error) {
+	if len(ips) < 2 {
+		return nil, errors.New("no enough ip to aggregate")
+	}
 	sort.Slice(ips, func(i, j int) bool {
 		return bytes.Compare(ips[i].IP, ips[j].IP) < 0
 	})
-	cidrs := make(map[string]*net.IPNet)
+	// Parse IP addresses
+	ip1 := ips[0].IP
+	ip2 := ips[len(ips)-1].IP
 
-	for _, ip := range ips {
-		if n, ok := cidrs[ip.IP.Mask(net.CIDRMask(24, 32)).String()]; ok {
-			var baseNet byte
-			var nowN, newN byte
-			for i := 8; i > 0; i-- {
-				nowN = n.IP[3] & (1 << (i - 1)) >> (i - 1)
-				newN = ip.IP[3] & (1 << (i - 1)) >> (i - 1)
-				if nowN&newN == 1 {
-					baseNet += 1 << (i - 1)
-				}
-				if nowN^newN == 1 {
-					n.Mask = net.CIDRMask(32-i, 32)
-					n.IP[3] = baseNet
-					break
-				}
+	bothIPv4 := IsIPv4(ip1) && IsIPv4(ip2)
+	bothIPv6 := IsIPv6(ip1) && IsIPv6(ip2)
+
+	if !bothIPv4 && !bothIPv6 {
+		return nil, errors.New("mismatching ip type")
+	}
+
+	if ip1 == nil || ip2 == nil {
+		return nil, errors.New("invalid IP address")
+	}
+
+	// Calculate common prefix length
+	commonPrefixLen := 0
+	for i := 0; i < len(ip1); i++ {
+		mask := byte(0x80)
+		for mask > 0 {
+			if ip1[i]&mask == ip2[i]&mask {
+				commonPrefixLen += 1
+				mask >>= 1
+			} else {
+				break
 			}
-		} else {
-			cidrs[ip.IP.Mask(net.CIDRMask(24, 32)).String()] = ip
 		}
 	}
 
-	approxIPs = make([]*net.IPNet, len(cidrs))
-	var index int
-	for _, cidr := range cidrs {
-		approxIPs[index] = cidr
-		index++
+	// Create the largest subnet
+	largestSubnet := &net.IPNet{
+		IP:   ip1.Mask(net.CIDRMask(commonPrefixLen, 8*len(ip1))),
+		Mask: net.CIDRMask(commonPrefixLen, 8*len(ip1)),
 	}
 
-	sort.Slice(approxIPs, func(i, j int) bool {
-		return bytes.Compare(approxIPs[i].IP, approxIPs[j].IP) < 0
-	})
-
-	return approxIPs
+	return []*net.IPNet{largestSubnet}, nil
 }
 
 // rangeToCIDRs converts the range of IPs covered by firstIP and lastIP to
@@ -1063,4 +1068,71 @@ func GetCIDRFromIPRange(firstIP, lastIP net.IP) ([]*net.IPNet, error) {
 		return bytes.Compare(cidrs[i].IP, cidrs[j].IP) < 0
 	})
 	return cidrs, nil
+}
+
+func IpRangeToCIDR(start, end string) ([]string, error) {
+	ips, err := netip.ParseAddr(start)
+	if err != nil {
+		return nil, err
+	}
+	ipe, err := netip.ParseAddr(end)
+	if err != nil {
+		return nil, err
+	}
+
+	isV4 := ips.Is4()
+	if isV4 != ipe.Is4() {
+		return nil, errors.New("start and end types are different")
+	}
+	if ips.Compare(ipe) > 0 {
+		return nil, errors.New("start > end")
+	}
+
+	var (
+		ipsInt = new(big.Int).SetBytes(ips.AsSlice())
+		ipeInt = new(big.Int).SetBytes(ipe.AsSlice())
+		nextIp = new(big.Int)
+		maxBit = new(big.Int)
+		cmpSh  = new(big.Int)
+		bits   = new(big.Int)
+		mask   = new(big.Int)
+		one    = big.NewInt(1)
+		buf    []byte
+		cidr   []string
+		bitSh  uint
+	)
+	if isV4 {
+		maxBit.SetUint64(32)
+		buf = make([]byte, 4)
+	} else {
+		maxBit.SetUint64(128)
+		buf = make([]byte, 16)
+	}
+
+	for {
+		bits.SetUint64(1)
+		mask.SetUint64(1)
+		for bits.Cmp(maxBit) < 0 {
+			nextIp.Or(ipsInt, mask)
+
+			bitSh = uint(bits.Uint64())
+			cmpSh.Lsh(cmpSh.Rsh(ipsInt, bitSh), bitSh)
+			if (nextIp.Cmp(ipeInt) > 0) || (cmpSh.Cmp(ipsInt) != 0) {
+				bits.Sub(bits, one)
+				mask.Rsh(mask, 1)
+				break
+			}
+			bits.Add(bits, one)
+			mask.Add(mask.Lsh(mask, 1), one)
+		}
+
+		addr, _ := netip.AddrFromSlice(ipsInt.FillBytes(buf))
+		cidr = append(cidr, addr.String()+"/"+bits.Sub(maxBit, bits).String())
+
+		if nextIp.Or(ipsInt, mask); nextIp.Cmp(ipeInt) >= 0 {
+			break
+		}
+		ipsInt.Add(nextIp, one)
+	}
+	return cidr, nil
 }
