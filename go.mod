@@ -10,7 +10,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.39
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/ipranger v0.0.34
-	github.com/projectdiscovery/utils v0.0.78
+	github.com/projectdiscovery/utils v0.0.79
 	github.com/stretchr/testify v1.8.4
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
