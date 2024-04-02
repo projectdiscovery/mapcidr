@@ -18,10 +18,23 @@ import (
 	"github.com/projectdiscovery/ipranger"
 	"github.com/projectdiscovery/mapcidr"
 	asn "github.com/projectdiscovery/mapcidr/asn"
+	"github.com/projectdiscovery/utils/auth/pdcp"
+	"github.com/projectdiscovery/utils/env"
 	fileutil "github.com/projectdiscovery/utils/file"
 	sliceutil "github.com/projectdiscovery/utils/slice"
 	updateutils "github.com/projectdiscovery/utils/update"
 )
+
+var PDCPApiKey string
+
+func init() {
+	pch := pdcp.PDCPCredHandler{}
+	if os.Getenv("PDCP_API_KEY") != "" {
+		PDCPApiKey = os.Getenv("PDCP_API_KEY")
+	} else if creds, err := pch.GetCreds(); err == nil {
+		PDCPApiKey = creds.APIKey
+	}
+}
 
 // Options contains cli options
 type Options struct {
@@ -51,6 +64,7 @@ type Options struct {
 	ZeroPadNumberOfZeroes int
 	ZeroPadPermute        bool
 	DisableUpdateCheck    bool
+	PdcpAuth              string
 }
 
 const banner = `
@@ -78,11 +92,21 @@ func GetUpdateCallback() func() {
 	}
 }
 
+// AuthWithPDCP is used to authenticate with PDCP
+func AuthWithPDCP() {
+	showBanner()
+	pdcp.CheckNValidateCredentials("mapcidr")
+}
+
 // ParseOptions parses the command line options for application
 func ParseOptions() *Options {
 	options := &Options{}
 	flagSet := goflags.NewFlagSet()
 	flagSet.SetDescription(`mapCIDR is developed to ease load distribution for mass scanning operations, it can be used both as a library and as independent CLI tool.`)
+
+	flagSet.CreateGroup("config", "Config",
+		flagSet.DynamicVar(&options.PdcpAuth, "auth", "true", "configure projectdiscovery cloud (pdcp) api key"),
+	)
 
 	// Input
 	flagSet.CreateGroup("input", "Input",
@@ -157,6 +181,20 @@ func ParseOptions() *Options {
 			}
 		} else {
 			gologger.Info().Msgf("Current mapcidr version %v %v", version, updateutils.GetVersionDescription(version, latestVersion))
+		}
+	}
+
+	// api key hierarchy: cli flag > env var > .pdcp/credential file
+	if options.PdcpAuth == "true" {
+		AuthWithPDCP()
+	} else if len(options.PdcpAuth) == 36 {
+		PDCPApiKey = options.PdcpAuth
+		ph := pdcp.PDCPCredHandler{}
+		if _, err := ph.GetCreds(); err == pdcp.ErrNoCreds {
+			apiServer := env.GetEnvOrDefault("PDCP_API_SERVER", pdcp.DefaultApiServer)
+			if validatedCreds, err := ph.ValidateAPIKey(PDCPApiKey, apiServer, "mapcidr"); err == nil {
+				_ = ph.SaveCreds(validatedCreds)
+			}
 		}
 	}
 
