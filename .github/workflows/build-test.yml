@@ -25,12 +25,15 @@ jobs:
         working-directory: cmd/mapcidr/
 
       - name: Test
+        env:
+          PDCP_API_KEY: ${{ secrets.PDCP_API_KEY }}
         run: go test ./...
         working-directory: .
 
       - name: Integration Tests
         env:
           GH_ACTION: true
+          PDCP_API_KEY: ${{ secrets.PDCP_API_KEY }}
         run: bash run.sh
         working-directory: integration_tests/
 
