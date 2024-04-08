@@ -10,7 +10,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.41
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/ipranger v0.0.40
-	github.com/projectdiscovery/utils v0.0.85
+	github.com/projectdiscovery/utils v0.0.86
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
@@ -70,8 +70,8 @@ require (
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.8 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.58 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.0.54 // indirect
-	github.com/quic-go/quic-go v0.37.7 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.0.55 // indirect
+	github.com/quic-go/quic-go v0.42.0 // indirect
 	github.com/refraction-networking/utls v1.5.4 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
