@@ -7,10 +7,10 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.1.0
 	github.com/projectdiscovery/blackrock v0.0.1
-	github.com/projectdiscovery/goflags v0.1.55
+	github.com/projectdiscovery/goflags v0.1.56
 	github.com/projectdiscovery/gologger v1.1.12
 	github.com/projectdiscovery/ipranger v0.0.50
-	github.com/projectdiscovery/utils v0.1.1
+	github.com/projectdiscovery/utils v0.1.3
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
