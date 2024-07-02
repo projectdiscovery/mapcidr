@@ -533,27 +533,38 @@ func AggregateApproxIPs(ips []*net.IPNet) ([]*net.IPNet, error) {
 		return nil, errors.New("invalid IP address")
 	}
 
-	// Calculate common prefix length
-	commonPrefixLen := 0
-	for i := 0; i < len(ip1); i++ {
-		mask := byte(0x80)
-		for mask > 0 {
-			if ip1[i]&mask == ip2[i]&mask {
-				commonPrefixLen += 1
-				mask >>= 1
-			} else {
-				break
+	cidrs := make(map[string]*net.IPNet)
+	for _, ip := range ips {
+		if n, ok := cidrs[ip.IP.Mask(net.CIDRMask(24, 32)).String()]; ok {
+			var baseNet byte
+			var nowN, newN byte
+			for i := 8; i > 0; i-- {
+				nowN = n.IP[3] & (1 << (i - 1)) >> (i - 1)
+				newN = ip.IP[3] & (1 << (i - 1)) >> (i - 1)
+				if nowN&newN == 1 {
+					baseNet += 1 << (i - 1)
+				}
+				if nowN^newN == 1 {
+					n.Mask = net.CIDRMask(32-i, 32)
+					n.IP[3] = baseNet
+					break
+				}
 			}
+		} else {
+			cidrs[ip.IP.Mask(net.CIDRMask(24, 32)).String()] = ip
 		}
 	}
 
-	// Create the largest subnet
-	largestSubnet := &net.IPNet{
-		IP:   ip1.Mask(net.CIDRMask(commonPrefixLen, 8*len(ip1))),
-		Mask: net.CIDRMask(commonPrefixLen, 8*len(ip1)),
+	approxIPs := make([]*net.IPNet, len(cidrs))
+	var index int
+	for _, cidr := range cidrs {
+		approxIPs[index] = cidr
+		index++
 	}
-
-	return []*net.IPNet{largestSubnet}, nil
+	sort.Slice(approxIPs, func(i, j int) bool {
+		return bytes.Compare(approxIPs[i].IP, approxIPs[j].IP) < 0
+	})
+	return approxIPs, nil
 }
 
 // rangeToCIDRs converts the range of IPs covered by firstIP and lastIP to
