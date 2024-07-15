@@ -10,7 +10,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.57
 	github.com/projectdiscovery/gologger v1.1.14
 	github.com/projectdiscovery/ipranger v0.0.53
-	github.com/projectdiscovery/utils v0.1.6
+	github.com/projectdiscovery/utils v0.2.0
 	github.com/stretchr/testify v1.9.0
 	golang.org/x/exp v0.0.0-20230315142452-642cacee5cc0
 )
@@ -39,7 +39,6 @@ require (
 	github.com/dsnet/compress v0.0.2-0.20210315054119-f66993602bf5 // indirect
 	github.com/fatih/color v1.15.0 // indirect
 	github.com/gaissmai/bart v0.9.5 // indirect
-	github.com/gaukas/godicttls v0.0.4 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/protobuf v1.5.3 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
@@ -49,7 +48,7 @@ require (
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/gorilla/css v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
-	github.com/klauspost/compress v1.16.7 // indirect
+	github.com/klauspost/compress v1.17.4 // indirect
 	github.com/klauspost/pgzip v1.2.5 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
@@ -69,14 +68,13 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/projectdiscovery/fastdialer v0.1.5 // indirect
+	github.com/projectdiscovery/fastdialer v0.2.0 // indirect
 	github.com/projectdiscovery/hmap v0.0.49 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
 	github.com/projectdiscovery/networkpolicy v0.0.9 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.66 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.68 // indirect
-	github.com/quic-go/quic-go v0.42.0 // indirect
-	github.com/refraction-networking/utls v1.5.4 // indirect
+	github.com/refraction-networking/utls v1.6.7 // indirect
 	github.com/rivo/uniseg v0.4.4 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
 	github.com/shirou/gopsutil/v3 v3.23.7 // indirect
