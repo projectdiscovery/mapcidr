@@ -275,6 +275,9 @@ func main() {
 	}
 	if options.FileCidr != nil {
 		for _, item := range options.FileCidr {
+			if strings.Contains(item,"#"){
+				item = strings.TrimSpace(strings.Split(item, "#")[0]) 
+			}
 			chancidr <- item
 		}
 	}
