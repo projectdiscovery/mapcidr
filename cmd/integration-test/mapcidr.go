@@ -34,6 +34,7 @@ var mapcidrTestcases = map[string]TestCase{
 	"Slice CIDRs by given host count":      &mapCidrQuery{question: "173.0.0.0/16", expectedOutput: []string{"173.0.0.0/18", "173.0.64.0/18", "173.0.128.0/18", "173.0.192.0/18"}, args: "-sbh 20000"},
 	"CIDR Aggregation":                    &mapCidrQuery{question: "173.0.0.0/18,173.0.64.0/18,173.0.128.0/18,173.0.192.0/18", expectedOutput: []string{"173.0.0.0/16"}, args: "-a"},
 	"CIDR Aggregation(file)":              &mapCidrQuery{question: "", expectedOutput: []string{"173.0.0.0/16"}, args: "-cl ./tests/cidrs_a.txt -a"},
+    "CIDR Aggregation with comments":      &mapCidrQuery{question: "173.0.0.0/18 #sample,173.0.64.0/18  #sample two spaces,173.0.128.0/18#no space,173.0.192.0/18", expectedOutput: []string{"173.0.0.0/16"}, args: "-a"},
 	"CIDR Approx Aggregation(file)":        &mapCidrQuery{question: "", expectedOutput: []string{"1.1.1.0/27"}, args: "-cl ./tests/ips_aa.txt -aa"},
 	"CIDR IP Count":                        &mapCidrQuery{question: "173.0.84.0/24,10.0.0.0/24", expectedOutput: []string{"512"}, args: "-c"},
 	"Match IP's(args) from CIDR":           &mapCidrQuery{question: "192.168.1.0/24", expectedOutput: []string{"192.168.1.253", "192.168.1.252"}, args: "-mi 192.168.1.253,192.168.1.252"},
