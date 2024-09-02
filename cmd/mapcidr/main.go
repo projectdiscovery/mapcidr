@@ -362,7 +362,18 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	ranger, _ = ipranger.New()
 
 	for cidr := range chancidr {
-
+		// if it's an ip turn it into a cidr
+		if ip := net.ParseIP(cidr); ip != nil {
+			if options.FilterIP != nil && sliceutil.Contains(options.FilterIP, cidr) {
+				continue
+			}
+			switch {
+			case ip.To4() != nil:
+				cidr += "/32"
+			case ip.To16() != nil:
+				cidr += "/128"
+			}
+		}
 		// Add IPs into ipRangeList which are passed as input. Example - "192.168.0.0-192.168.0.5"
 		if strings.Contains(cidr, "-") {
 			var ipRange []net.IP
@@ -380,15 +391,6 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		if asn.IsASN(cidr) {
 			asnNumberList = append(asnNumberList, cidr)
 			continue
-		}
-		// if it's an ip turn it into a cidr
-		if ip := net.ParseIP(cidr); ip != nil {
-			switch {
-			case ip.To4() != nil:
-				cidr += "/32"
-			case ip.To16() != nil:
-				cidr += "/128"
-			}
 		}
 		// test if we have a cidr
 		if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
