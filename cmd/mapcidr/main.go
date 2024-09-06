@@ -494,7 +494,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	}
 
 	if options.AggregateApprox {
-		ipnet, err := mapcidr.AggregateApproxIPs(allCidrs)
+		ipnet, err := mapcidr.AggregateApproxIPv4(allCidrs)
 		if err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
 		}

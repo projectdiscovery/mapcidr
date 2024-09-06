@@ -511,7 +511,9 @@ func CoalesceCIDRs(cidrs []*net.IPNet) (coalescedIPV4, coalescedIPV6 []*net.IPNe
 	return
 }
 
-func AggregateApproxIPs(ips []*net.IPNet) ([]*net.IPNet, error) {
+// This function is used to aggregate a list of IPv4 addresses into smaller approximated
+// CIDR /24 blocks
+func AggregateApproxIPv4(ips []*net.IPNet) ([]*net.IPNet, error) {
 	if len(ips) < 2 {
 		return nil, errors.New("no enough ip to aggregate")
 	}
@@ -523,10 +525,9 @@ func AggregateApproxIPs(ips []*net.IPNet) ([]*net.IPNet, error) {
 	ip2 := ips[len(ips)-1].IP
 
 	bothIPv4 := IsIPv4(ip1) && IsIPv4(ip2)
-	bothIPv6 := IsIPv6(ip1) && IsIPv6(ip2)
 
-	if !bothIPv4 && !bothIPv6 {
-		return nil, errors.New("mismatching ip type")
+	if !bothIPv4 {
+		return nil, errors.New("only ipv4 is supported")
 	}
 
 	if ip1 == nil || ip2 == nil {
