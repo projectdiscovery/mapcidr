@@ -28,13 +28,14 @@ type mapCidrQueryOutputFile struct {
 
 var mapcidrTestcases = map[string]TestCase{
 	// CIDR
-	"CIDR Exapansion":                      &mapCidrQuery{question: "192.168.0.0/30", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"}},
-	"Multiple CIDR Exapansion":             &mapCidrQuery{question: "192.168.0.0/30,10.50.0.0/30", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3", "10.50.0.0", "10.50.0.1", "10.50.0.2", "10.50.0.3"}},
+	"CIDR Expansion":                      &mapCidrQuery{question: "192.168.0.0/30", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"}},
+	"Multiple CIDR Expansion":             &mapCidrQuery{question: "192.168.0.0/30,10.50.0.0/30", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3", "10.50.0.0", "10.50.0.1", "10.50.0.2", "10.50.0.3"}},
 	"Slice CIDRs by given CIDR count":      &mapCidrQuery{question: "173.0.84.0/24", expectedOutput: []string{"173.0.84.0/27", "173.0.84.32/27", "173.0.84.64/27", "173.0.84.96/27", "173.0.84.128/27", "173.0.84.160/27", "173.0.84.208/28", "173.0.84.192/28", "173.0.84.240/28", "173.0.84.224/28"}, args: "-sbc 10"},
 	"Slice CIDRs by given host count":      &mapCidrQuery{question: "173.0.0.0/16", expectedOutput: []string{"173.0.0.0/18", "173.0.64.0/18", "173.0.128.0/18", "173.0.192.0/18"}, args: "-sbh 20000"},
-	"CIDR Arggregation":                    &mapCidrQuery{question: "173.0.0.0/18,173.0.64.0/18,173.0.128.0/18,173.0.192.0/18", expectedOutput: []string{"173.0.0.0/16"}, args: "-a"},
-	"CIDR Arggregation(file)":              &mapCidrQuery{question: "", expectedOutput: []string{"173.0.0.0/16"}, args: "-cl ./tests/cidrs_a.txt -a"},
-	"CIDR Appox Arggregation(file)":        &mapCidrQuery{question: "", expectedOutput: []string{"1.1.1.0/27"}, args: "-cl ./tests/ips_aa.txt -aa"},
+	"CIDR Aggregation":                    &mapCidrQuery{question: "173.0.0.0/18,173.0.64.0/18,173.0.128.0/18,173.0.192.0/18", expectedOutput: []string{"173.0.0.0/16"}, args: "-a"},
+	"CIDR Aggregation(file)":              &mapCidrQuery{question: "", expectedOutput: []string{"173.0.0.0/16"}, args: "-cl ./tests/cidrs_a.txt -a"},
+	"CIDR Aggregation with comments":      &mapCidrQuery{question: "173.0.0.0/18 #sample,173.0.64.0/18  #sample two spaces,173.0.128.0/18#no space,173.0.192.0/18", expectedOutput: []string{"173.0.0.0/16"}, args: "-a"},
+	"CIDR Approx Aggregation(file)":        &mapCidrQuery{question: "", expectedOutput: []string{"1.1.1.0/27"}, args: "-cl ./tests/ips_aa.txt -aa"},
 	"CIDR IP Count":                        &mapCidrQuery{question: "173.0.84.0/24,10.0.0.0/24", expectedOutput: []string{"512"}, args: "-c"},
 	"Match IP's(args) from CIDR":           &mapCidrQuery{question: "192.168.1.0/24", expectedOutput: []string{"192.168.1.253", "192.168.1.252"}, args: "-mi 192.168.1.253,192.168.1.252"},
 	"Match IP's(file) from CIDR":           &mapCidrQuery{question: "192.168.1.0/24", expectedOutput: []string{"192.168.1.253", "192.168.1.252"}, args: "-mi ./tests/ip_list_to_match.txt"},
@@ -50,8 +51,8 @@ var mapcidrTestcases = map[string]TestCase{
 	"CIDR Shuffle Multiple Port IPs":       &mapCidrQuery{question: "192.168.0.0/30", expectedOutput: []string{"192.168.0.3:8080", "192.168.0.0:8080", "192.168.0.1:8080", "192.168.0.2:8080", "192.168.0.3:9090", "192.168.0.0:9090", "192.168.0.1:9090", "192.168.0.2:9090"}, args: "-sp 8080,9090"},
 
 	//IP range
-	"IPRange Exapansion":                      &mapCidrQuery{question: "192.168.0.0-192.168.0.3", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"}},
-	"Multiple IPRange Exapansion":             &mapCidrQuery{question: "192.168.0.0-192.168.0.3,192.168.0.4-192.168.0.10", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3", "192.168.0.4", "192.168.0.5", "192.168.0.6", "192.168.0.7", "192.168.0.8", "192.168.0.9", "192.168.0.10"}},
+	"IPRange Expansion":                      &mapCidrQuery{question: "192.168.0.0-192.168.0.3", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"}},
+	"Multiple IPRange Expansion":             &mapCidrQuery{question: "192.168.0.0-192.168.0.3,192.168.0.4-192.168.0.10", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3", "192.168.0.4", "192.168.0.5", "192.168.0.6", "192.168.0.7", "192.168.0.8", "192.168.0.9", "192.168.0.10"}},
 	"IPRange Aggregation":                     &mapCidrQuery{question: "192.168.0.0-192.168.0.3", expectedOutput: []string{"192.168.0.0/30"}, args: "-a"},
 	"Multiple IPRange Aggregation":            &mapCidrQuery{question: "192.168.0.0-192.168.0.128,192.168.0.129-192.168.0.255", expectedOutput: []string{"192.168.0.0/24"}, args: "-a"},
 	"IPRange IP count":                        &mapCidrQuery{question: "192.168.0.0-192.168.0.255", expectedOutput: []string{"256"}, args: "-c"},
@@ -125,7 +126,7 @@ func errIncorrectResult(expected, got []string) error {
 }
 
 func compareResult(expected, result []string) error {
-	// check if incorrent number of result
+	// check if incorrect number of result
 	if len(result) != len(expected) {
 		return errIncorrectResultsCount(result)
 	}
