@@ -100,3 +100,35 @@ func TestRangeToCIDRs(t *testing.T) {
 		})
 	}
 }
+
+func TestFindSmallestIPRange(t *testing.T) {
+	// Input IP addresses
+	ips := []string{
+		"192.168.1.1",
+		"192.168.1.111",
+		"192.168.2.2",
+	}
+
+	// Expected smallest range
+	expectedRange := "192.168.0.0/22"
+
+	var ipNets []*net.IPNet
+	for _, ip := range ips {
+		_, ipNet, _ := net.ParseCIDR(ip + "/32")
+		ipNets = append(ipNets, ipNet)
+	}
+
+	// Find the smallest IP range
+	smallestRange, err := FindMinCIDR(ipNets)
+	if err != nil {
+		t.Fatalf("Error finding smallest IP range: %v", err)
+	}
+
+	// Convert the result to CIDR notation
+	cidr := smallestRange.String()
+
+	// Check if the result matches the expected range
+	if cidr != expectedRange {
+		t.Errorf("Expected smallest range %s, but got %s", expectedRange, cidr)
+	}
+}

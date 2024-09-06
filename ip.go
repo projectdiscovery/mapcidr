@@ -17,7 +17,6 @@ import (
 	"strconv"
 	"strings"
 
-	iputil "github.com/projectdiscovery/utils/ip"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
@@ -570,61 +569,50 @@ func AggregateApproxIPv4To24(ips []*net.IPNet) ([]*net.IPNet, error) {
 	return approxIPs, nil
 }
 
-// FindMinCIDR finds the most specific CIDR containing all given IP networks
-func FindMinCIDR(cidrs []*net.IPNet) (*net.IPNet, error) {
-	if len(cidrs) == 0 {
-		return nil, fmt.Errorf("no IP networks provided")
+// FindMinCIDR finds the most specific CIDR containing all given IPs
+func FindMinCIDR(ipNets []*net.IPNet) (*net.IPNet, error) {
+	if len(ipNets) == 0 {
+		return nil, errors.New("empty IP list")
 	}
 
-	// Determine if we're dealing with IPv4 or IPv6
-	isIPv4 := iputil.IsIPv4(cidrs[0])
-	ipLen := net.IPv6len
-	if isIPv4 {
-		ipLen = net.IPv4len
-	}
-
-	// Start with the first CIDR as our base
-	baseIP := cidrs[0].IP.To16()
-	baseMask := cidrs[0].Mask
-
-	for _, ipNet := range cidrs[1:] {
-		ip := ipNet.IP.To16()
-
-		// Ensure all IPs are of the same version
-		if iputil.IsIPv4(ip) != isIPv4 {
-			return nil, fmt.Errorf("mix of IPv4 and IPv6 addresses is not supported")
+	// Find the minimum and maximum IP addresses
+	minIP := ipNets[0].IP
+	maxIP := ipNets[0].IP
+	for _, ipNet := range ipNets {
+		if bytes.Compare(ipNet.IP, minIP) < 0 {
+			minIP = ipNet.IP
 		}
-
-		// Find the common network prefix
-		for i := 0; i < ipLen; i++ {
-			baseMask[i] &= ^(baseIP[i] ^ ip[i])
-		}
-
-		// Update the base IP
-		for i := 0; i < ipLen; i++ {
-			baseIP[i] &= baseMask[i]
+		if bytes.Compare(ipNet.IP, maxIP) > 0 {
+			maxIP = ipNet.IP
 		}
 	}
 
-	// Count the number of trailing zero bits in the mask
-	maskSize := 0
-	for i := 0; i < ipLen; i++ {
-		maskSize += bits.LeadingZeros8(^baseMask[i])
+	// Calculate the difference between max and min IP
+	diff := make(net.IP, len(minIP))
+	for i := range minIP {
+		diff[i] = maxIP[i] ^ minIP[i]
 	}
 
-	// Determine the appropriate bit length for the IP version
-	bitLen := 128
-	if isIPv4 {
-		bitLen = 32
-		baseIP = baseIP.To4()
+	// Find the position of the most significant bit set in the difference
+	prefixLen := len(minIP) * 8
+	for i, b := range diff {
+		if b == 0 {
+			continue
+		}
+		prefixLen = i*8 + bits.LeadingZeros8(b)
+		break
 	}
 
-	finalCidr := &net.IPNet{
-		IP:   baseIP,
-		Mask: net.CIDRMask(maskSize, bitLen),
-	}
+	// Adjust the prefix length to get the next power of 2
+	prefixLen = (len(minIP) * 8) - bits.Len(uint((1<<uint(len(minIP)*8-prefixLen))-1))
 
-	return finalCidr, nil
+	// Create the CIDR
+	mask := net.CIDRMask(prefixLen, len(minIP)*8)
+	finalIPnet := &net.IPNet{
+		IP:   minIP.Mask(mask),
+		Mask: mask,
+	}
+	return finalIPnet, nil
 }
 
 // rangeToCIDRs converts the range of IPs covered by firstIP and lastIP to
