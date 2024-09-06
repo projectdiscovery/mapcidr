@@ -22,6 +22,7 @@ import (
 	"github.com/projectdiscovery/utils/env"
 	fileutil "github.com/projectdiscovery/utils/file"
 	sliceutil "github.com/projectdiscovery/utils/slice"
+	stringsutil "github.com/projectdiscovery/utils/strings"
 	updateutils "github.com/projectdiscovery/utils/update"
 )
 
@@ -108,12 +109,10 @@ func ParseOptions() *Options {
 		flagSet.DynamicVar(&options.PdcpAuth, "auth", "true", "configure projectdiscovery cloud (pdcp) api key"),
 	)
 
-	// Input
 	flagSet.CreateGroup("input", "Input",
 		flagSet.StringSliceVarP(&options.FileCidr, "cidr", "cl", nil, "CIDR/IP/File containing list of CIDR/IP to process", goflags.FileNormalizedStringSliceOptions),
 	)
 
-	// Process
 	flagSet.CreateGroup("process", "Process",
 		flagSet.IntVar(&options.Slices, "sbc", 0, "Slice CIDRs by given CIDR count"),
 		flagSet.IntVar(&options.HostCount, "sbh", 0, "Slice CIDRs by given HOST count"),
@@ -127,7 +126,6 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.ZeroPadPermute, "zero-pad-permute", "zpp", false, "enable permutations from 0 to zero-pad-n for each octets"),
 	)
 
-	// Filter
 	flagSet.CreateGroup("filter", "Filter",
 		flagSet.BoolVarP(&options.FilterIP4, "filter-ipv4", "f4", false, "Filter IPv4 IPs from input"),
 		flagSet.BoolVarP(&options.FilterIP6, "filter-ipv6", "f6", false, "Filter IPv6 IPs from input"),
@@ -137,7 +135,6 @@ func ParseOptions() *Options {
 		flagSet.StringSliceVarP(&options.FilterIP, "filter-ip", "fi", nil, "IP/CIDR/FILE containing list of IP/CIDR to filter (comma-separated, file input)", goflags.FileNormalizedStringSliceOptions),
 	)
 
-	// Miscellaneous
 	flagSet.CreateGroup("miscellaneous", "Miscellaneous",
 		flagSet.BoolVarP(&options.SortAscending, "sort", "s", false, "Sort input IPs in ascending order"),
 		flagSet.BoolVarP(&options.SortDescending, "sort-reverse", "sr", false, "Sort input IPs in descending order"),
@@ -145,13 +142,11 @@ func ParseOptions() *Options {
 		flagSet.StringVarP(&options.ShufflePorts, "shuffle-port", "sp", "", "Shuffle Input IP:Port in random order"),
 	)
 
-	//Update
 	flagSet.CreateGroup("update", "Update",
 		flagSet.CallbackVarP(GetUpdateCallback(), "update", "up", "update mapcidr to latest version"),
 		flagSet.BoolVarP(&options.DisableUpdateCheck, "disable-update-check", "duc", false, "disable automatic mapcidr update check"),
 	)
 
-	// Output
 	flagSet.CreateGroup("output", "Output",
 		flagSet.BoolVar(&options.Verbose, "verbose", false, "Verbose mode"),
 		flagSet.StringVarP(&options.Output, "output", "o", "", "File to write output to"),
@@ -274,11 +269,12 @@ func main() {
 		}
 	}
 	if options.FileCidr != nil {
+		normalizeOptions := stringsutil.NormalizeOptions{
+			TrimSpaces:    true,
+			StripComments: true,
+		}
 		for _, item := range options.FileCidr {
-			if strings.Contains(item,"#"){
-				item = strings.TrimSpace(strings.Split(item, "#")[0]) 
-			}
-			chancidr <- item
+			chancidr <- stringsutil.NormalizeWithOptions(item, normalizeOptions)
 		}
 	}
 	close(chancidr)
