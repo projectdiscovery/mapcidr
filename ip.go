@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"math/big"
+	"math/bits"
 	"net"
 	"net/netip"
 	"regexp"
@@ -16,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 
+	iputil "github.com/projectdiscovery/utils/ip"
 	stringsutil "github.com/projectdiscovery/utils/strings"
 )
 
@@ -512,8 +514,8 @@ func CoalesceCIDRs(cidrs []*net.IPNet) (coalescedIPV4, coalescedIPV6 []*net.IPNe
 }
 
 // This function is used to aggregate a list of IPv4 addresses into smaller approximated
-// CIDR /24 blocks
-func AggregateApproxIPv4(ips []*net.IPNet) ([]*net.IPNet, error) {
+// CIDR /24 blocks (class C)
+func AggregateApproxIPv4To24(ips []*net.IPNet) ([]*net.IPNet, error) {
 	if len(ips) < 2 {
 		return nil, errors.New("no enough ip to aggregate")
 	}
@@ -566,6 +568,63 @@ func AggregateApproxIPv4(ips []*net.IPNet) ([]*net.IPNet, error) {
 		return bytes.Compare(approxIPs[i].IP, approxIPs[j].IP) < 0
 	})
 	return approxIPs, nil
+}
+
+// FindMinCIDR finds the most specific CIDR containing all given IP networks
+func FindMinCIDR(cidrs []*net.IPNet) (*net.IPNet, error) {
+	if len(cidrs) == 0 {
+		return nil, fmt.Errorf("no IP networks provided")
+	}
+
+	// Determine if we're dealing with IPv4 or IPv6
+	isIPv4 := iputil.IsIPv4(cidrs[0])
+	ipLen := net.IPv6len
+	if isIPv4 {
+		ipLen = net.IPv4len
+	}
+
+	// Start with the first CIDR as our base
+	baseIP := cidrs[0].IP.To16()
+	baseMask := cidrs[0].Mask
+
+	for _, ipNet := range cidrs[1:] {
+		ip := ipNet.IP.To16()
+
+		// Ensure all IPs are of the same version
+		if iputil.IsIPv4(ip) != isIPv4 {
+			return nil, fmt.Errorf("mix of IPv4 and IPv6 addresses is not supported")
+		}
+
+		// Find the common network prefix
+		for i := 0; i < ipLen; i++ {
+			baseMask[i] &= ^(baseIP[i] ^ ip[i])
+		}
+
+		// Update the base IP
+		for i := 0; i < ipLen; i++ {
+			baseIP[i] &= baseMask[i]
+		}
+	}
+
+	// Count the number of trailing zero bits in the mask
+	maskSize := 0
+	for i := 0; i < ipLen; i++ {
+		maskSize += bits.LeadingZeros8(^baseMask[i])
+	}
+
+	// Determine the appropriate bit length for the IP version
+	bitLen := 128
+	if isIPv4 {
+		bitLen = 32
+		baseIP = baseIP.To4()
+	}
+
+	finalCidr := &net.IPNet{
+		IP:   baseIP,
+		Mask: net.CIDRMask(maskSize, bitLen),
+	}
+
+	return finalCidr, nil
 }
 
 // rangeToCIDRs converts the range of IPs covered by firstIP and lastIP to
