@@ -186,8 +186,8 @@ github.com/projectdiscovery/goflags v0.1.64 h1:FDfwdt9N97Hi8OuhbkDlKtVttpc/CRMIW
 github.com/projectdiscovery/goflags v0.1.64/go.mod h1:3FyHIVQtnycNOc1LE3O1jj/XR5XuMdF9QfHd0ujhnX4=
 github.com/projectdiscovery/gologger v1.1.28 h1:3OYYnoEaHAYkPm2c2KgUifBDPy93JCQq1hl5ICtpJT8=
 github.com/projectdiscovery/gologger v1.1.28/go.mod h1:rB7xNi4tcx/HqpQu4QgpFIopIg8SNF/VBc6cTeQLqWQ=
-github.com/projectdiscovery/hmap v0.0.61 h1:1lmb2MfDWY7e3Xq7WufcbecD6MKYMj/7yCmKp7nueDc=
-github.com/projectdiscovery/hmap v0.0.61/go.mod h1:DQWTC4DYnSQvMgxjYv43pdQhH0gjyAAZMx28xYOCNTA=
+github.com/projectdiscovery/hmap v0.0.62 h1:Pb3omgGQkRHB2EBDhgXniUXVC8Jz2CBzpSMKZYRUKFs=
+github.com/projectdiscovery/hmap v0.0.62/go.mod h1:pNheW3ukrLOcRUDFWrq8OAZiizhosDonIKRVg/4PGnM=
 github.com/projectdiscovery/ipranger v0.0.53 h1:gb4yEqtC2MJl1tSdx/ycao1A1wl7sHqjHeifZidO3Z4=
 github.com/projectdiscovery/ipranger v0.0.53/go.mod h1:r6R0DFKQRo4QR2zjZXqLRCp0ovbco8F/NmOI+pK4db8=
 github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 h1:ZScLodGSezQVwsQDtBSMFp72WDq0nNN+KE/5DHKY5QE=
@@ -196,8 +196,8 @@ github.com/projectdiscovery/networkpolicy v0.0.9 h1:IrlDoYZagNNO8y+7iZeHT8k5izE+
 github.com/projectdiscovery/networkpolicy v0.0.9/go.mod h1:XFJ2Lnv8BE/ziQCFjBHMsH1w6VmkPiQtk+NlBpdMU7M=
 github.com/projectdiscovery/retryabledns v1.0.79 h1:AWeDFRte26Xukb1DZhfHzYs3ssfz1APyrjuNE4LdmUE=
 github.com/projectdiscovery/retryabledns v1.0.79/go.mod h1:KgknRyjubwhAQiCiIM0LSsApH3dOLpYmAnOWyIWaSjk=
-github.com/projectdiscovery/retryablehttp-go v1.0.81 h1:F/sJauqgYg4fgqEZHfLUZx0GoJcKNMcJkKHfQES/2As=
-github.com/projectdiscovery/retryablehttp-go v1.0.81/go.mod h1:P3tO8Rg61T7kot7bqXdeJPsowEVRzWQ4IydqV596ZnI=
+github.com/projectdiscovery/retryablehttp-go v1.0.83 h1:9r8OTg9kqWExSIHW78NbV1pnQWLkVez25xDy7rLehLo=
+github.com/projectdiscovery/retryablehttp-go v1.0.83/go.mod h1:xvFtu2kY/M58BlJSckjTY8dFHNpChNitSvjJXcPW600=
 github.com/projectdiscovery/utils v0.2.14 h1:n4zc6n1Z9EPZWu1T2CbhBwib81pShvTcCXtcBrmSny0=
 github.com/projectdiscovery/utils v0.2.14/go.mod h1:V8t4qhy4MBOvNwZv7WNWT8P3WaU+ahprtGCMnHboLtI=
 github.com/refraction-networking/utls v1.6.7 h1:zVJ7sP1dJx/WtVuITug3qYUq034cDq9B2MR1K67ULZM=
