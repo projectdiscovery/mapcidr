@@ -8,7 +8,7 @@ require (
 	github.com/projectdiscovery/asnmap v1.1.1
 	github.com/projectdiscovery/blackrock v0.0.1
 	github.com/projectdiscovery/goflags v0.1.65
-	github.com/projectdiscovery/gologger v1.1.31
+	github.com/projectdiscovery/gologger v1.1.32
 	github.com/projectdiscovery/ipranger v0.0.53
 	github.com/projectdiscovery/utils v0.2.19
 	github.com/stretchr/testify v1.9.0
