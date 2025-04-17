@@ -42,6 +42,14 @@ func AddressCount(cidr string) (uint64, error) {
 }
 
 // AddressCountIpnet returns the number of IP addresses in an IPNet structure
+//
+// NOTE(dwisiswant0): This function uses uint64 and will overflow for IPv6 CIDRs
+// larger than /64 (e.g., /63, /48). Functions like SplitIPNetIntoN were
+// modified to work based on available prefix bits rather than the total address
+// count to avoid this overflow issue w/o requiring big.Int calcs for splitting.
+// But, direct usage of this function or functions relying on it
+// (like SplitIPNetByNumber) will still produce incorrect results for large IPv6
+// ranges.
 func AddressCountIpnet(network *net.IPNet) uint64 {
 	prefixLen, bits := network.Mask.Size()
 	return 1 << (uint64(bits) - uint64(prefixLen))
@@ -81,18 +89,25 @@ func SplitIPNetIntoN(iprange *net.IPNet, n int) ([]*net.IPNet, error) {
 	var err error
 	subnets := make([]*net.IPNet, 0, n)
 
-	// invalid value
-	if n <= 1 || AddressCountIpnet(iprange) < uint64(n) {
+	prefixLen, bits := iprange.Mask.Size()
+	availableBits := bits - prefixLen
+	requiredBits := 0
+	if n > 1 {
+		requiredBits = int(math.Ceil(math.Log2(float64(n))))
+	}
+
+	// invalid value or impossible split
+	if n <= 1 || availableBits < requiredBits {
 		subnets = append(subnets, iprange)
 		return subnets, nil
 	}
 	// power of two
-	if isPowerOfTwo(n) || isPowerOfTwoPlusOne(n) {
+	if isPowerOfTwo(n) { // isPowerOfTwoPlusOne(n)
 		return splitIPNet(iprange, n)
 	}
 
 	var closestMinorPowerOfTwo int
-	// find the closest power of two in a stupid way
+	// find the closest power of two less than or equal to n
 	for i := n; i > 0; i-- {
 		if isPowerOfTwo(i) {
 			closestMinorPowerOfTwo = i
@@ -105,25 +120,19 @@ func SplitIPNetIntoN(iprange *net.IPNet, n int) ([]*net.IPNet, error) {
 		return nil, err
 	}
 	for len(subnets) < n {
-		var newSubnets []*net.IPNet
-		level := 1
-		for i := len(subnets) - 1; i >= 0; i-- {
-			divided, err := divideIPNet(subnets[i])
-			if err != nil {
-				return nil, err
-			}
-			newSubnets = append(newSubnets, divided...)
-			if len(subnets)-level+len(newSubnets) == n {
-				reverseIPNet(newSubnets)
-				subnets = subnets[:len(subnets)-level]
-				subnets = append(subnets, newSubnets...)
-				return subnets, nil
-			}
-			level++
+		lastSubnet := subnets[len(subnets)-1]
+
+		// NOTE(dwisiswant0): divide the last subnet into two
+		divided, err := divideIPNet(lastSubnet)
+		if err != nil {
+			// NOTE(dwisiswant0): This can happen if we try to split a /32 or /128
+			return nil, fmt.Errorf("cannot divide subnet %s further to reach %d splits: %w", lastSubnet, n, err)
 		}
-		reverseIPNet(newSubnets)
-		subnets = newSubnets
+
+		subnets = subnets[:len(subnets)-1]
+		subnets = append(subnets, divided...)
 	}
+
 	return subnets, nil
 }
 
@@ -238,6 +247,15 @@ func nextSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, error) {
 	return next, nil
 }
 
+// isPowerOfTwoPlusOne returns if a number is a power of 2 plus 1
+//
+// NOTE(dwisiswant0): This function is no longer used. The logic in
+// SplitIPNetIntoN was refactored to correctly handle non-power-of-two splits by
+// first splitting into the largest power-of-two less than or equal to n, and
+// then iteratively dividing the last subnet. This removed the need for this
+// specific check.
+//
+// nolint:all
 func isPowerOfTwoPlusOne(x int) bool {
 	return isPowerOfTwo(x - 1)
 }
@@ -248,6 +266,8 @@ func isPowerOfTwo(x int) bool {
 }
 
 // reverseIPNet reverses an ipnet slice
+//
+// nolint:all
 func reverseIPNet(ipnets []*net.IPNet) {
 	for i, j := 0, len(ipnets)-1; i < j; i, j = i+1, j-1 {
 		ipnets[i], ipnets[j] = ipnets[j], ipnets[i]
