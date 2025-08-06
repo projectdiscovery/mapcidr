@@ -242,7 +242,7 @@ $ mapcidr -cidr 192.168.1.0/24 -mi 192.168.1.253,192.168.1.252
 $ mapcidr -cidr 192.168.1.0/24 -mi ip_list_to_match.txt
 ```
 
-To match IPs from the given list of CIDR ranges, use the following command.
+To filter IPs from the given list of CIDR ranges, use the following command:
 
 ```console
 $ mapcidr -cidr 192.168.1.224/28 -fi 192.168.1.233,192.168.1.234
@@ -358,4 +358,4 @@ func main() {
 ```
 
 
-mapCDIR is made with 🖤 by the [projectdiscovery](https://projectdiscovery.io) team.
+mapCIDR is made with 🖤 by the [projectdiscovery](https://projectdiscovery.io) team.
