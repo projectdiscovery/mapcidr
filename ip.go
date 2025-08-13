@@ -965,33 +965,47 @@ func FmtIp6(ip net.IP, short bool) (string, error) {
 
 func FixedPad(ip net.IP, padding int) string {
 	parts := strings.Split(ip.String(), ".")
-	var format bytes.Buffer
-	format.WriteString("%#0" + fmt.Sprint(padding) + "s")
-	format.WriteString(".%#0" + fmt.Sprint(padding) + "s")
-	format.WriteString(".%#0" + fmt.Sprint(padding) + "s")
-	format.WriteString(".%#0" + fmt.Sprint(padding) + "s")
-	return fmt.Sprintf(format.String(), parts[0], parts[1], parts[2], parts[3])
+	a, _ := strconv.Atoi(parts[0])
+	b, _ := strconv.Atoi(parts[1])
+	c, _ := strconv.Atoi(parts[2])
+	d, _ := strconv.Atoi(parts[3])
+	return fmt.Sprintf("%0*d.%0*d.%0*d.%0*d", padding, a, padding, b, padding, c, padding, d)
 }
 
 func IncrementalPad(ip net.IP, padding int) []string {
 	parts := strings.Split(ip.String(), ".")
-	var ips []string
-	for p1 := 0; p1 < padding; p1++ {
-		for p2 := 0; p2 < padding; p2++ {
-			for p3 := 0; p3 < padding; p3++ {
-				for p4 := 0; p4 < padding; p4++ {
-					var format bytes.Buffer
-					format.WriteString("%#0" + fmt.Sprint(p1) + "s")
-					format.WriteString(".%#0" + fmt.Sprint(p2) + "s")
-					format.WriteString(".%#0" + fmt.Sprint(p3) + "s")
-					format.WriteString(".%#0" + fmt.Sprint(p4) + "s")
-					alteredIP := fmt.Sprintf(format.String(), parts[0], parts[1], parts[2], parts[3])
-					ips = append(ips, alteredIP)
+	if len(parts) != 4 {
+		return []string{ip.String()}
+	}
+	if padding < 1 {
+		padding = 1
+	}
+
+	toInt := func(s string) int { n, _ := strconv.Atoi(s); return n }
+	a, b, c, d := toInt(parts[0]), toInt(parts[1]), toInt(parts[2]), toInt(parts[3])
+
+	widths := make([]int, 0, padding)
+	for w := 1; w <= padding; w++ {
+		widths = append(widths, w)
+	}
+
+	seen := make(map[string]struct{})
+	out := make([]string, 0, padding*padding*padding*padding)
+
+	for _, wa := range widths {
+		for _, wb := range widths {
+			for _, wc := range widths {
+				for _, wd := range widths {
+					s := fmt.Sprintf("%0*d.%0*d.%0*d.%0*d", wa, a, wb, b, wc, c, wd, d)
+					if _, ok := seen[s]; !ok {
+						seen[s] = struct{}{}
+						out = append(out, s)
+					}
 				}
 			}
 		}
 	}
-	return ips
+	return out
 }
 
 func AlterIP(ip string, formats []string, zeroPadN int, zeroPadPermutation bool) []string {
