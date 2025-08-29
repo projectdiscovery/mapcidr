@@ -23,7 +23,7 @@ func Test_asnClient_GetCIDRsForASNNum(t *testing.T) {
 		{
 			name:                "ASN Number 2",
 			asnNumber:           "AS7712",
-			potentiallyExpected: [][]string{{"118.67.200.0/21"}},
+			potentiallyExpected: [][]string{{"118.67.200.0/22"}},
 		},
 		{
 			name:                "Wrong ASN number",
