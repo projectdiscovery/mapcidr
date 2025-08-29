@@ -35,7 +35,11 @@ func Test_asnClient_GetCIDRsForASNNum(t *testing.T) {
 	for _, tt := range tests {
 		var result []string
 		got, err := GetCIDRsForASNNum(tt.asnNumber)
+		// ignore
 		if err != nil {
+			if isUnauthorizedError(err) {
+				t.Skipf("skipping test %s because it's unauthorized", tt.name)
+			}
 			require.ErrorContains(t, err, "invalid asn number")
 		}
 		for _, cidr := range got {
@@ -72,6 +76,9 @@ func TestASNClient_GetIPAddressesAsStream(t *testing.T) {
 		var result []string
 		got, err := GetIPAddressesAsStream(tt.asnNumber)
 		if err != nil {
+			if isUnauthorizedError(err) {
+				t.Skipf("skipping test %s because it's unauthorized", tt.name)
+			}
 			require.ErrorContains(t, err, "invalid asn number")
 		}
 		for ip := range got {
@@ -84,4 +91,11 @@ func TestASNClient_GetIPAddressesAsStream(t *testing.T) {
 
 		require.ElementsMatch(t, items, result, "could not get correct cidrs")
 	}
+}
+
+func isUnauthorizedError(err error) bool {
+	if err == nil {
+		return false
+	}
+	return stringsutil.ContainsAnyI(err.Error(), "unauthorized", "401", "get free api key to configure")
 }
