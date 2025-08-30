@@ -346,6 +346,31 @@ func prepareIPsFromCidrFlagList(items []string) []string {
 	}
 	return flagIPList
 }
+func cidrsToNetworks(cidrs []string) ([]*net.IPNet, error) {
+	networks := make([]*net.IPNet, 0, len(cidrs))
+	for _, cidr := range cidrs {
+		_, network, err := net.ParseCIDR(cidr)
+		if err != nil {
+			// try to parse as ip
+			if ip := net.ParseIP(cidr); ip != nil {
+				if ip.To4() != nil {
+					cidr += "/32"
+				} else {
+					cidr += "/128"
+				}
+				_, network, err = net.ParseCIDR(cidr)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
+		}
+		networks = append(networks, network)
+	}
+	return networks, nil
+}
+
 func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
 	var (
@@ -373,24 +398,43 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 				cidr += "/128"
 			}
 		}
+		if len(options.FilterIP) > 0 {
+			inputNetworks, err := cidrsToNetworks([]string{cidr})
+			if err != nil {
+				gologger.Fatal().Msgf("%s\n", err)
+			}
+			filterNetworks, err := cidrsToNetworks(options.FilterIP)
+			if err != nil {
+				gologger.Fatal().Msgf("%s\n", err)
+			}
+			newNetworks, err := mapcidr.RemoveCIDRs(inputNetworks, filterNetworks)
+			if err != nil {
+				gologger.Fatal().Msgf("%s\n", err)
+			}
+			for _, newNet := range newNetworks {
+				commonFunc(newNet.String(), outputchan)
+			}
+			continue
+		}
 		// Add IPs into ipRangeList which are passed as input. Example - "192.168.0.0-192.168.0.5"
 		if strings.Contains(cidr, "-") {
 			var ipRange []net.IP
 			for _, ipstr := range strings.Split(cidr, "-") {
 				ipRange = append(ipRange, net.ParseIP(ipstr))
 			}
-			//check if ipRange has more than 2 values
 			if len(ipRange) > 2 {
 				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
 			}
 			ipRangeList = append(ipRangeList, ipRange)
 			continue
 		}
+
 		// Add ASN number
 		if asn.IsASN(cidr) {
 			asnNumberList = append(asnNumberList, cidr)
 			continue
 		}
+
 		// test if we have a cidr
 		if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
 			gologger.Fatal().Msgf("%s\n", err)
