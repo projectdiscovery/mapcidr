@@ -11,7 +11,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.54
 	github.com/projectdiscovery/ipranger v0.0.53
 	github.com/projectdiscovery/utils v0.5.0
-	github.com/stretchr/testify v1.10.0
+	github.com/stretchr/testify v1.11.0
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 )
 
@@ -74,10 +74,10 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/projectdiscovery/fastdialer v0.4.7 // indirect
+	github.com/projectdiscovery/fastdialer v0.4.9 // indirect
 	github.com/projectdiscovery/hmap v0.0.93 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.22 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.23 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.106 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.121 // indirect
 	github.com/refraction-networking/utls v1.7.1 // indirect
