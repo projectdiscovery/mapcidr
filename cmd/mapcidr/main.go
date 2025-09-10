@@ -400,7 +400,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		}
 
 		cidrsToProcess := []string{cidr}
-		if len(options.FilterIP) > 0 {
+		if len(options.FilterIP) > 0 && strings.Contains(cidr, "/") {
 			inputNetworks, err := cidrsToNetworks([]string{cidr})
 			if err != nil {
 				gologger.Fatal().Msgf("%s\n", err)
