@@ -279,8 +279,8 @@ func ipNetToRange(ipNet net.IPNet) netWithRange {
 	firstIP = firstIP.Mask(ipNet.Mask)
 	lastIP = lastIP.Mask(ipNet.Mask)
 
-	if firstIP.To4() != nil {
-		firstIP = append(v4Mappedv6Prefix, firstIP...)
+	if ip4 := firstIP.To4(); ip4 != nil && !(len(firstIP) == net.IPv6len && bytes.Equal(firstIP[:12], v4Mappedv6Prefix)) {
+		firstIP = append(v4Mappedv6Prefix, ip4...)
 		lastIP = append(v4Mappedv6Prefix, lastIP...)
 	}
 
