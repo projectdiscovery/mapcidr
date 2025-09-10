@@ -346,6 +346,31 @@ func prepareIPsFromCidrFlagList(items []string) []string {
 	}
 	return flagIPList
 }
+func cidrsToNetworks(cidrs []string) ([]*net.IPNet, error) {
+	networks := make([]*net.IPNet, 0, len(cidrs))
+	for _, cidr := range cidrs {
+		_, network, err := net.ParseCIDR(cidr)
+		if err != nil {
+			// try to parse as ip
+			if ip := net.ParseIP(cidr); ip != nil {
+				if ip.To4() != nil {
+					cidr += "/32"
+				} else {
+					cidr += "/128"
+				}
+				_, network, err = net.ParseCIDR(cidr)
+				if err != nil {
+					return nil, err
+				}
+			} else {
+				return nil, err
+			}
+		}
+		networks = append(networks, network)
+	}
+	return networks, nil
+}
+
 func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	defer wg.Done()
 	var (
@@ -373,44 +398,68 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 				cidr += "/128"
 			}
 		}
-		// Add IPs into ipRangeList which are passed as input. Example - "192.168.0.0-192.168.0.5"
-		if strings.Contains(cidr, "-") {
-			var ipRange []net.IP
-			for _, ipstr := range strings.Split(cidr, "-") {
-				ipRange = append(ipRange, net.ParseIP(ipstr))
+
+		cidrsToProcess := []string{cidr}
+		if len(options.FilterIP) > 0 && strings.Contains(cidr, "/") {
+			inputNetworks, err := cidrsToNetworks([]string{cidr})
+			if err != nil {
+				gologger.Fatal().Msgf("%s\n", err)
 			}
-			//check if ipRange has more than 2 values
-			if len(ipRange) > 2 {
-				gologger.Fatal().Msgf("IP range can not have more than 2 values.")
+			filterNetworks, err := cidrsToNetworks(options.FilterIP)
+			if err != nil {
+				gologger.Fatal().Msgf("%s\n", err)
 			}
-			ipRangeList = append(ipRangeList, ipRange)
-			continue
-		}
-		// Add ASN number
-		if asn.IsASN(cidr) {
-			asnNumberList = append(asnNumberList, cidr)
-			continue
-		}
-		// test if we have a cidr
-		if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+			newNetworks, err := mapcidr.RemoveCIDRs(inputNetworks, filterNetworks)
+			if err != nil {
+				gologger.Fatal().Msgf("%s\n", err)
+			}
+			cidrsToProcess = make([]string, 0, len(newNetworks))
+			for _, newNet := range newNetworks {
+				cidrsToProcess = append(cidrsToProcess, newNet.String())
+			}
 		}
 
-		// filters ip4|ip6, by default do not filter
-		_, bits := pCidr.Mask.Size()
-		isCidr4 := bits == mapcidr.DefaultMaskSize4
-		isCidr6 := bits > mapcidr.DefaultMaskSize4
-		isWrongIpType := (options.FilterIP4 && isCidr6) || (options.FilterIP6 && isCidr4)
-		if isWrongIpType {
-			continue
-		}
+		for _, cidr := range cidrsToProcess {
+			// Add IPs into ipRangeList which are passed as input. Example - "192.168.0.0-192.168.0.5"
+			if strings.Contains(cidr, "-") {
+				var ipRange []net.IP
+				for _, ipstr := range strings.Split(cidr, "-") {
+					ipRange = append(ipRange, net.ParseIP(ipstr))
+				}
+				if len(ipRange) > 2 {
+					gologger.Fatal().Msgf("IP range can not have more than 2 values.")
+				}
+				ipRangeList = append(ipRangeList, ipRange)
+				continue
+			}
 
-		// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
-		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
-			_ = ranger.Add(cidr)
-			allCidrs = append(allCidrs, pCidr)
-		} else {
-			commonFunc(cidr, outputchan)
+			// Add ASN number
+			if asn.IsASN(cidr) {
+				asnNumberList = append(asnNumberList, cidr)
+				continue
+			}
+
+			// test if we have a cidr
+			if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
+				gologger.Fatal().Msgf("%s\n", err)
+			}
+
+			// filters ip4|ip6, by default do not filter
+			_, bits := pCidr.Mask.Size()
+			isCidr4 := bits == mapcidr.DefaultMaskSize4
+			isCidr6 := bits > mapcidr.DefaultMaskSize4
+			isWrongIpType := (options.FilterIP4 && isCidr6) || (options.FilterIP6 && isCidr4)
+			if isWrongIpType {
+				continue
+			}
+
+			// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
+			if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+				_ = ranger.Add(cidr)
+				allCidrs = append(allCidrs, pCidr)
+			} else {
+				commonFunc(cidr, outputchan)
+			}
 		}
 	}
 
