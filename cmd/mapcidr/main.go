@@ -384,7 +384,6 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	)
 
 	ranger, _ = ipranger.New()
-
 	for cidr := range chancidr {
 		// if it's an ip turn it into a cidr
 		if ip := net.ParseIP(cidr); ip != nil {
@@ -453,8 +452,8 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 				continue
 			}
 
-			// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 			if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+				// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 				_ = ranger.Add(cidr)
 				allCidrs = append(allCidrs, pCidr)
 			} else {

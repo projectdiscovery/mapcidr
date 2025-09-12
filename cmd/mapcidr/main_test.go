@@ -220,6 +220,16 @@ func TestProcess(t *testing.T) {
 				SortDescending: true,
 			},
 			expectedOutput: []string{"192.168.1.3", "192.168.1.2", "192.168.1.1", "192.168.1.0"},
+		}, {
+			name:       "FilterIPWithAggregation",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:  []string{"10.0.0.0/30"},
+				FilterIP:  []string{"10.0.0.1"},
+				Aggregate: true,
+			},
+			expectedOutput: []string{"10.0.0.0/32", "10.0.0.2/31"},
 		},
 	}
 	var wg sync.WaitGroup
