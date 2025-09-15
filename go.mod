@@ -11,7 +11,7 @@ require (
 	github.com/projectdiscovery/gologger v1.1.54
 	github.com/projectdiscovery/ipranger v0.0.53
 	github.com/projectdiscovery/utils v0.5.0
-	github.com/stretchr/testify v1.11.0
+	github.com/stretchr/testify v1.11.1
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 )
 
@@ -43,7 +43,7 @@ require (
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707 // indirect
 	github.com/fatih/color v1.15.0 // indirect
-	github.com/gaissmai/bart v0.24.0 // indirect
+	github.com/gaissmai/bart v0.25.0 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
 	github.com/google/go-github/v30 v30.1.0 // indirect
@@ -77,7 +77,7 @@ require (
 	github.com/projectdiscovery/fastdialer v0.4.9 // indirect
 	github.com/projectdiscovery/hmap v0.0.93 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.23 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.25 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.107 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.123 // indirect
 	github.com/refraction-networking/utls v1.7.1 // indirect
