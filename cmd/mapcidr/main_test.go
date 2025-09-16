@@ -230,6 +230,67 @@ func TestProcess(t *testing.T) {
 				Aggregate: true,
 			},
 			expectedOutput: []string{"10.0.0.0/32", "10.0.0.2/31"},
+		}, {
+			name:       "MultiOctetRangeExpansion",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr: []string{"192.168.0-1.1-2"},
+			},
+			expectedOutput: []string{
+				"192.168.0.1", "192.168.0.2",
+				"192.168.1.1", "192.168.1.2",
+			},
+		},
+		{
+			name:       "MultiOctetRangeWithFilter",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr: []string{"192.168.0-1.1-2"},
+				FilterIP: []string{"192.168.1.1"},
+			},
+			expectedOutput: []string{
+				"192.168.0.1", "192.168.0.2",
+				"192.168.1.2",
+			},
+		},
+		{
+			name:       "MultiOctetRangeAggregate",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:  []string{"10.0-1.0-1.0-1"},
+				Aggregate: true,
+			},
+			expectedOutput: []string{
+				"10.0.0.0/31", "10.0.1.0/31",
+				"10.1.0.0/31", "10.1.1.0/31",
+			},
+		},
+		{
+			name:       "MultiOctetRangeSortAscending",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:      []string{"10.0.0-0.2-3"},
+				SortAscending: true,
+			},
+			expectedOutput: []string{
+				"10.0.0.2", "10.0.0.3",
+			},
+		},
+		{
+			name:       "MultiOctetRangeSortDescending",
+			chancidr:   make(chan string),
+			outputchan: make(chan string),
+			options: Options{
+				FileCidr:       []string{"10.0.1-2.1"},
+				SortDescending: true,
+			},
+			expectedOutput: []string{
+				"10.0.2.1", "10.0.1.1",
+			},
 		},
 	}
 	var wg sync.WaitGroup
