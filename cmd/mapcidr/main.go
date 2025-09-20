@@ -390,12 +390,11 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 			if options.FilterIP != nil && sliceutil.Contains(options.FilterIP, cidr) {
 				continue
 			}
-			switch {
-			case ip.To4() != nil:
-				cidr += "/32"
-			case ip.To16() != nil:
-				cidr += "/128"
-			}
+		    if ip.To4() != nil && !strings.Contains(cidr, ":") {
+		        cidr += "/32"
+		    } else {
+		        cidr += "/128"
+	    	}
 		}
 
 		cidrsToProcess := []string{cidr}
