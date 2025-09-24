@@ -83,6 +83,14 @@ var mapcidrTestcases = map[string]TestCase{
 	"IPRange & CIDR Count":               &mapCidrQuery{question: "166.8.0.0/16,166.11.0.0/16,166.9.0.0-166.10.255.255", expectedOutput: []string{"262144"}, args: "-c"},
 	"IPRange & CIDR convert IPs to IPv6": &mapCidrQuery{question: "192.168.0.0-192.168.0.3", expectedOutput: []string{"00:00:00:00:00:ffff:c0a8:0000", "00:00:00:00:00:ffff:c0a8:0001", "00:00:00:00:00:ffff:c0a8:0002", "00:00:00:00:00:ffff:c0a8:0003"}, args: "-t6"},
 
+	// IPv6 ↔ IPv4 conversion tests (PR #690)
+	"IPv6 hex format to IPv4 conversion":    &mapCidrQuery{question: "::ffff:c0a8:0101", expectedOutput: []string{"192.168.1.1"}, args: "-t4"},
+	"IPv6 ::ffff format to IPv4 conversion": &mapCidrQuery{question: "::ffff:192.168.1.1", expectedOutput: []string{"192.168.1.1"}, args: "-t4"},
+
+	// roundtrip IPV4 -> IPv6 -> IPv4
+	"IPv4 to IPv6 conversion":                         &mapCidrQuery{question: "192.168.1.1", expectedOutput: []string{"00:00:00:00:00:ffff:c0a8:0101"}, args: "-t6"},
+	"IPv6 hex format to IPv4 conversion (round-trip)": &mapCidrQuery{question: "00:00:00:00:00:ffff:c0a8:0101", expectedOutput: []string{"192.168.1.1"}, args: "-t4"},
+
 	// output
 	"OutputFile case": &mapCidrQueryOutputFile{question: "192.168.0.0/30", expectedOutput: []string{"192.168.0.0", "192.168.0.1", "192.168.0.2", "192.168.0.3"}, args: "-o /tmp/output.txt", outputfile: "/tmp/output.txt"},
 
