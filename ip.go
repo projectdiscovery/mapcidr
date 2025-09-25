@@ -1211,3 +1211,71 @@ func IpRangeToCIDR(start, end string) ([]string, error) {
 	}
 	return cidr, nil
 }
+
+/*
+ExpandIPPattern expands an IPv4 pattern string into a list of net.IP addresses.
+The pattern must be in the form of four octets separated by dots (a.b.c.d).
+*/
+func ExpandIPPattern(pattern string) ([]net.IP, error) {
+	parts := strings.Split(pattern, ".")
+	if len(parts) != 4 {
+		return nil, fmt.Errorf("invalid IP pattern: %s", pattern)
+	}
+
+	var octets [][]int
+	for _, part := range parts {
+		if strings.Contains(part, "-") {
+			bounds := strings.Split(part, "-")
+			if len(bounds) != 2 {
+				return nil, fmt.Errorf("invalid range in %s", part)
+			}
+
+			start, err1 := strconv.Atoi(bounds[0])
+			end, err2 := strconv.Atoi(bounds[1])
+
+			if err1 != nil || err2 != nil || start > end {
+				return nil, fmt.Errorf("invalid range: %s", part)
+			}
+
+			var nums []int
+			for i := start; i <= end; i++ {
+				nums = append(nums, i)
+			}
+			octets = append(octets, nums)
+
+		} else {
+			v, err := strconv.Atoi(part)
+			if err != nil {
+				return nil, fmt.Errorf("invalid octet: %s", part)
+			}
+
+			octets = append(octets, []int{v})
+		}
+	}
+
+	var ips []net.IP
+	for _, o1 := range octets[0] {
+		if o1 < 0 || o1 > 255 {
+			return nil, fmt.Errorf("invalid octet value: %d", o1)
+		}
+		for _, o2 := range octets[1] {
+			if o2 < 0 || o2 > 255 {
+				return nil, fmt.Errorf("invalid octet value: %d", o2)
+			}
+			for _, o3 := range octets[2] {
+				if o3 < 0 || o3 > 255 {
+					return nil, fmt.Errorf("invalid octet value: %d", o3)
+				}
+				for _, o4 := range octets[3] {
+					if o4 < 0 || o4 > 255 {
+						return nil, fmt.Errorf("invalid octet value: %d", o4)
+					}
+					ip := net.IPv4(byte(o1), byte(o2), byte(o3), byte(o4))
+					ips = append(ips, ip)
+				}
+			}
+		}
+	}
+
+	return ips, nil
+}
