@@ -77,7 +77,7 @@ const banner = `
 `
 
 // Version is the current version of mapcidr
-const version = `v1.1.94`
+const version = `v1.1.96`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
@@ -390,11 +390,11 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 			if options.FilterIP != nil && sliceutil.Contains(options.FilterIP, cidr) {
 				continue
 			}
-		    if ip.To4() != nil && !strings.Contains(cidr, ":") {
-		        cidr += "/32"
-		    } else {
-		        cidr += "/128"
-	    	}
+			if ip.To4() != nil && !strings.Contains(cidr, ":") {
+				cidr += "/32"
+			} else {
+				cidr += "/128"
+			}
 		}
 
 		cidrsToProcess := []string{cidr}
