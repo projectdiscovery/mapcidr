@@ -256,9 +256,9 @@ func nextSubnet(network *net.IPNet, prefixLen int) (*net.IPNet, error) {
 // specific check.
 //
 // nolint:all
-func isPowerOfTwoPlusOne(x int) bool {
-	return isPowerOfTwo(x - 1)
-}
+// func isPowerOfTwoPlusOne(x int) bool {
+// 	return isPowerOfTwo(x - 1)
+// }
 
 // isPowerOfTwo returns if a number is a power of 2
 func isPowerOfTwo(x int) bool {
@@ -268,11 +268,11 @@ func isPowerOfTwo(x int) bool {
 // reverseIPNet reverses an ipnet slice
 //
 // nolint:all
-func reverseIPNet(ipnets []*net.IPNet) {
-	for i, j := 0, len(ipnets)-1; i < j; i, j = i+1, j-1 {
-		ipnets[i], ipnets[j] = ipnets[j], ipnets[i]
-	}
-}
+// func reverseIPNet(ipnets []*net.IPNet) {
+// 	for i, j := 0, len(ipnets)-1; i < j; i, j = i+1, j-1 {
+// 		ipnets[i], ipnets[j] = ipnets[j], ipnets[i]
+// 	}
+// }
 
 // IPAddresses returns all the IP addresses in a CIDR
 func IPAddresses(cidr string) ([]string, error) {
