@@ -418,8 +418,28 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		}
 
 		for _, cidr := range cidrsToProcess {
-			// Add IPs into ipRangeList which are passed as input. Example - "192.168.0.0-192.168.0.5"
+
 			if strings.Contains(cidr, "-") {
+				// Try to parse as multi-octet range
+				if strings.Count(cidr, ".") == 3 {
+					ips, err := mapcidr.ExpandIPPattern(cidr)
+					if err != nil {
+						gologger.Fatal().Msgf("%s\n", err)
+					}
+
+					for _, ip := range ips {
+						ipCidr := ip.String() + "/32"
+						if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
+							_, ipnet, _ := net.ParseCIDR(ipCidr)
+							allCidrs = append(allCidrs, ipnet)
+						} else {
+							commonFunc(ipCidr, outputchan)
+						}
+					}
+					continue
+				}
+
+				// Add IPs into ipRangeList which are passed as input. Example - "192.168.0.0-192.168.0.5"
 				var ipRange []net.IP
 				for _, ipstr := range strings.Split(cidr, "-") {
 					ipRange = append(ipRange, net.ParseIP(ipstr))
@@ -451,8 +471,8 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 				continue
 			}
 
+			// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 			if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
-				// In case of coalesce/shuffle we need to know all the cidrs and aggregate them by calling the proper function
 				_ = ranger.Add(cidr)
 				allCidrs = append(allCidrs, pCidr)
 			} else {
