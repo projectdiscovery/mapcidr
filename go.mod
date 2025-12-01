@@ -74,7 +74,7 @@ require (
 	github.com/pierrec/lz4/v4 v4.1.21 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
-	github.com/projectdiscovery/fastdialer v0.4.17 // indirect
+	github.com/projectdiscovery/fastdialer v0.4.18 // indirect
 	github.com/projectdiscovery/hmap v0.0.96 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.29 // indirect
