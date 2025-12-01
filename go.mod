@@ -77,7 +77,7 @@ require (
 	github.com/projectdiscovery/fastdialer v0.4.17 // indirect
 	github.com/projectdiscovery/hmap v0.0.96 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.29 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.30 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.110 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.0.132 // indirect
 	github.com/refraction-networking/utls v1.7.1 // indirect
