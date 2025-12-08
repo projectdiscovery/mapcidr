@@ -205,8 +205,8 @@ func removeCIDR(allowCIDR, removeCIDR *net.IPNet) ([]*net.IPNet, error) {
 	allowSize, _ := allowCIDR.Mask.Size()
 	removeSize, _ := removeCIDR.Mask.Size()
 
-	if allowSize >= removeSize {
-		return nil, fmt.Errorf("allow CIDR prefix must be a superset of " +
+	if allowSize > removeSize {
+		return nil, fmt.Errorf("allow CIDR prefix must be a superset of "+
 			"remove CIDR prefix")
 	}
 

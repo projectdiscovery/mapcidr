@@ -132,3 +132,37 @@ func TestFindSmallestIPRange(t *testing.T) {
 		t.Errorf("Expected smallest range %s, but got %s", expectedRange, cidr)
 	}
 }
+
+func TestRemoveCIDRsReservedIPv4(t *testing.T) {
+	_, allowCIDR, err := net.ParseCIDR("0.0.0.0/0")
+	require.NoError(t, err)
+
+	removeCIDRs := []string{
+		"0.0.0.0/8",
+		"10.0.0.0/8",
+		"100.64.0.0/10",
+		"127.0.0.0/8",
+		"169.254.0.0/16",
+		"172.16.0.0/12",
+		"192.0.0.0/24",
+		"192.0.2.0/24",
+		"192.88.99.0/24",
+		"192.168.0.0/16",
+		"198.18.0.0/15",
+		"198.51.100.0/24",
+		"203.0.113.0/24",
+		"224.0.0.0/4",
+		"240.0.0.0/4",
+	}
+
+	var removeNetworks []*net.IPNet
+	for _, cidr := range removeCIDRs {
+		_, network, parseErr := net.ParseCIDR(cidr)
+		require.NoError(t, parseErr)
+		removeNetworks = append(removeNetworks, network)
+	}
+
+	newAllows, removeErr := RemoveCIDRs([]*net.IPNet{allowCIDR}, removeNetworks)
+	require.NoError(t, removeErr)
+	require.NotEmpty(t, newAllows)
+}
