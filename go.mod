@@ -78,7 +78,7 @@ require (
 	github.com/projectdiscovery/hmap v0.0.97 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20240226150047-2e2c51e35983 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.30 // indirect
-	github.com/projectdiscovery/retryabledns v1.0.110 // indirect
+	github.com/projectdiscovery/retryabledns v1.0.111 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.1.0 // indirect
 	github.com/refraction-networking/utls v1.7.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
