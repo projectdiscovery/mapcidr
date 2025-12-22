@@ -81,7 +81,7 @@ require (
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.32 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.111 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.1.1 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.3.0 // indirect
 	github.com/refraction-networking/utls v1.7.1 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
