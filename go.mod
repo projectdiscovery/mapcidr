@@ -8,7 +8,7 @@ require (
 	github.com/projectdiscovery/asnmap v1.1.1
 	github.com/projectdiscovery/blackrock v0.0.1
 	github.com/projectdiscovery/goflags v0.1.74
-	github.com/projectdiscovery/gologger v1.1.64
+	github.com/projectdiscovery/gologger v1.1.65
 	github.com/projectdiscovery/ipranger v0.0.53
 	github.com/projectdiscovery/utils v0.8.0
 	github.com/stretchr/testify v1.11.1
@@ -39,6 +39,7 @@ require (
 	github.com/cnf/structhash v0.0.0-20201127153200-e1b16c1ebc08 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/dimchansky/utfbom v1.1.1 // indirect
+	github.com/djherbis/times v1.6.0 // indirect
 	github.com/dlclark/regexp2 v1.11.5 // indirect
 	github.com/docker/go-units v0.5.0 // indirect
 	github.com/dsnet/compress v0.0.2-0.20230904184137-39efe44ab707 // indirect
@@ -57,6 +58,7 @@ require (
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.11 // indirect
 	github.com/klauspost/pgzip v1.2.6 // indirect
+	github.com/logrusorgru/aurora/v4 v4.0.0 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/lufia/plan9stats v0.0.0-20211012122336-39d0f177ccd0 // indirect
 	github.com/mattn/go-colorable v0.1.13 // indirect
@@ -119,6 +121,5 @@ require (
 	golang.org/x/term v0.37.0 // indirect
 	golang.org/x/text v0.31.0 // indirect
 	golang.org/x/tools v0.38.0 // indirect
-	gopkg.in/djherbis/times.v1 v1.3.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
