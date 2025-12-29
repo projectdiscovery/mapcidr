@@ -77,7 +77,7 @@ require (
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	github.com/power-devops/perfstat v0.0.0-20210106213030-5aafc221ea8c // indirect
 	github.com/projectdiscovery/fastdialer v0.5.0 // indirect
-	github.com/projectdiscovery/hmap v0.0.98 // indirect
+	github.com/projectdiscovery/hmap v0.0.99 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.32 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.112 // indirect
