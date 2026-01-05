@@ -249,8 +249,8 @@ github.com/projectdiscovery/asnmap v1.1.1 h1:ImJiKIaACOT7HPx4Pabb5dksolzaFYsD1kI
 github.com/projectdiscovery/asnmap v1.1.1/go.mod h1:QT7jt9nQanj+Ucjr9BqGr1Q2veCCKSAVyUzLXfEcQ60=
 github.com/projectdiscovery/blackrock v0.0.1 h1:lHQqhaaEFjgf5WkuItbpeCZv2DUIE45k0VbGJyft6LQ=
 github.com/projectdiscovery/blackrock v0.0.1/go.mod h1:ANUtjDfaVrqB453bzToU+YB4cUbvBRpLvEwoWIwlTss=
-github.com/projectdiscovery/fastdialer v0.5.0 h1:7XX11t/7kuenVM09r3+EeNgqYItkoTNVUc6XKFqZpHw=
-github.com/projectdiscovery/fastdialer v0.5.0/go.mod h1:v4uDT/Sb0o83KNA+ggxHCw6u6BvJZglpGiAPIufaQ84=
+github.com/projectdiscovery/fastdialer v0.5.1 h1:/4PX1u80QfZ8+DdF9jdtz1in5eajJhw89/xouVc9/+c=
+github.com/projectdiscovery/fastdialer v0.5.1/go.mod h1:34SS9VxrrmUhO67LYioxjrAWOQ5/kwgJNj9CiFgRJso=
 github.com/projectdiscovery/goflags v0.1.74 h1:n85uTRj5qMosm0PFBfsvOL24I7TdWRcWq/1GynhXS7c=
 github.com/projectdiscovery/goflags v0.1.74/go.mod h1:UMc9/7dFz2oln+10tv6cy+7WZKTHf9UGhaNkF95emh4=
 github.com/projectdiscovery/gologger v1.1.66 h1:dYXfCWWNNiC7AgIDBkIF+3sTGyQbrpncsQEFQwyKCOg=
@@ -265,8 +265,8 @@ github.com/projectdiscovery/networkpolicy v0.1.33 h1:bVgp+XpLEsQ7ZEJt3UaUqIwhI01
 github.com/projectdiscovery/networkpolicy v0.1.33/go.mod h1:YAPddAXUc/lhoU85AFdvgOQKx8Qh8r0vzSjexRWk6Yk=
 github.com/projectdiscovery/retryabledns v1.0.112 h1:4iCiuo6jMnw/pdOZRzBQrbUOUu5tOeuvGupxVV8RDLw=
 github.com/projectdiscovery/retryabledns v1.0.112/go.mod h1:xsJTKbo+KGqd7+88z1naEUFJybLH2yjB/zUyOweA7k0=
-github.com/projectdiscovery/retryablehttp-go v1.3.1 h1:ds0dcKa3565pYdIJrLcwcbrb9cH6MojY2uHwGPoXubg=
-github.com/projectdiscovery/retryablehttp-go v1.3.1/go.mod h1:ISMHtd5DrSSDenQ23Vz9cIyIj3XlccZzZhuWHUJTa60=
+github.com/projectdiscovery/retryablehttp-go v1.3.2 h1:Rv2gw/8t3QZz+WIuHUspVBoRrpBWpVOhzh/wLUGYSVM=
+github.com/projectdiscovery/retryablehttp-go v1.3.2/go.mod h1:q1EQ+FX9JP5Z0EqLXDf+8b6XdzWmBXIMPowpI6hQ9aU=
 github.com/projectdiscovery/utils v0.8.0 h1:8d79OCs5xGDNXdKxMUKMY/lgQSUWJMYB1B2Sx+oiqkQ=
 github.com/projectdiscovery/utils v0.8.0/go.mod h1:CU6tjtyTRxBrnNek+GPJplw4IIHcXNZNKO09kWgqTdg=
 github.com/prometheus/client_model v0.0.0-20190812154241-14fe0d1b01d4/go.mod h1:xMI15A0UPsDsEKsMN9yxemIoYk6Tm2C1GtYGdfGttqA=
