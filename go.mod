@@ -10,7 +10,7 @@ require (
 	github.com/projectdiscovery/goflags v0.1.74
 	github.com/projectdiscovery/gologger v1.1.67
 	github.com/projectdiscovery/ipranger v0.0.53
-	github.com/projectdiscovery/utils v0.8.0
+	github.com/projectdiscovery/utils v0.9.0
 	github.com/stretchr/testify v1.11.1
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8
 )
@@ -101,24 +101,24 @@ require (
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/ulikunitz/xz v0.5.15 // indirect
-	github.com/weppos/publicsuffix-go v0.40.3-0.20250408071509-6074bbe7fd39 // indirect
+	github.com/weppos/publicsuffix-go v0.50.3-0.20260104170930-90713dec78f2 // indirect
 	github.com/yl2chen/cidranger v1.0.2 // indirect
 	github.com/yuin/goldmark v1.7.4 // indirect
 	github.com/yuin/goldmark-emoji v1.0.3 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	github.com/zcalusic/sysinfo v1.0.2 // indirect
 	github.com/zmap/rc2 v0.0.0-20190804163417-abaa70531248 // indirect
-	github.com/zmap/zcrypto v0.0.0-20230422215203-9a665e1e9968 // indirect
+	github.com/zmap/zcrypto v0.0.0-20240803002437-3a861682ac77 // indirect
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go4.org v0.0.0-20230225012048-214862532bf5 // indirect
-	golang.org/x/crypto v0.45.0 // indirect
+	golang.org/x/crypto v0.46.0 // indirect
 	golang.org/x/mod v0.30.0 // indirect
-	golang.org/x/net v0.47.0 // indirect
+	golang.org/x/net v0.48.0 // indirect
 	golang.org/x/oauth2 v0.27.0 // indirect
 	golang.org/x/sync v0.19.0 // indirect
-	golang.org/x/sys v0.38.0 // indirect
-	golang.org/x/term v0.37.0 // indirect
+	golang.org/x/sys v0.39.0 // indirect
+	golang.org/x/term v0.38.0 // indirect
 	golang.org/x/text v0.32.0 // indirect
 	golang.org/x/tools v0.39.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
