@@ -7,20 +7,16 @@ on:
   workflow_dispatch:
 
 permissions:
+  contents: write
   pull-requests: write
-  issues: write
-  repository-projects: write
 
 jobs:
   automerge:
     runs-on: ubuntu-latest
     if: github.actor == 'dependabot[bot]'
     steps:
-      - uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.DEPENDABOT_PAT }}
-
-      - uses: ahmadnassri/action-dependabot-auto-merge@v2
-        with:
-          github-token: ${{ secrets.DEPENDABOT_PAT }}
-          target: all
+      - name: Enable auto-merge
+        run: gh pr merge --auto --squash "$PR_URL"
+        env:
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          GH_TOKEN: ${{ secrets.DEPENDABOT_PAT }}
