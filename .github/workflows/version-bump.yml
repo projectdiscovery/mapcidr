@@ -3,7 +3,7 @@ name: Bump Version
 on:
   workflow_dispatch:
   schedule:
-    - cron: "55 23 * * 0"
+    - cron: "30 23 * * 6"
 
 jobs:
   version_bump:
@@ -16,11 +16,11 @@ jobs:
 
       - name: Get Commit Count
         id: get_commit
-        run: git rev-list  `git rev-list --tags --no-walk --max-count=1`..HEAD --count | xargs -I {} echo COMMIT_COUNT={} >> $GITHUB_OUTPUT
+        run: git rev-list "$(git rev-list --tags --no-walk --max-count=1)"..HEAD --count | xargs -I {} echo "COMMIT_COUNT={}" >> "$GITHUB_OUTPUT"
 
       - name: Set up Go
         if: ${{ steps.get_commit.outputs.COMMIT_COUNT > 0  }}
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           go-version: 1.24.0
 
