@@ -5,6 +5,8 @@ before:
 builds:
 - binary: '{{ .ProjectName }}'
   main: cmd/mapcidr/main.go
+  ldflags:
+    - -s -w -X main.version={{.Tag}}
   goos: [windows,linux,darwin]
   goarch: [amd64,386,arm,arm64]
   ignore:
