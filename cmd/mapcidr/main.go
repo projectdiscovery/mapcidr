@@ -77,7 +77,7 @@ const banner = `
 `
 
 // Version is the current version of mapcidr
-var version = `v1.1.116`
+var version = `v1.1.117`
 
 // showBanner is used to show the banner to the user
 func showBanner() {
