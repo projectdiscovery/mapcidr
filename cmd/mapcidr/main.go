@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"sort"
@@ -55,6 +56,7 @@ type Options struct {
 	SortAscending         bool
 	SortDescending        bool
 	Count                 bool
+	Range                 bool
 	FilterIP4             bool
 	FilterIP6             bool
 	ToIP4                 bool
@@ -119,6 +121,7 @@ func ParseOptions() *Options {
 		flagSet.BoolVarP(&options.Aggregate, "aggregate", "a", false, "Aggregate IPs/CIDRs into minimum subnet"),
 		flagSet.BoolVarP(&options.AggregateApprox, "aggregate-approx", "aa", false, "Aggregate sparse IPs/CIDRs into minimum approximated subnet"),
 		flagSet.BoolVarP(&options.Count, "count", "c", false, "Count number of IPs in given CIDR"),
+		flagSet.BoolVarP(&options.Range, "range", "r", false, "Convert CIDR to IP range (e.g. 192.168.0.0-192.168.255.255)"),
 		flagSet.BoolVarP(&options.ToIP4, "to-ipv4", "t4", false, "Convert IPs to IPv4 format"),
 		flagSet.BoolVarP(&options.ToIP6, "to-ipv6", "t6", false, "Convert IPs to IPv6 format"),
 		flagSet.StringSliceVarP(&options.IPFormats, "if", "ip-format", nil, "IP formats (0,1,2,3,4,5,6,7,8,9,10,11)", goflags.NormalizedStringSliceOptions),
@@ -584,6 +587,18 @@ The purpose of the function is split into subnets or split by no. of host or CID
 This gives us benefit of DRY and we can add new features here going forward.
 */
 func commonFunc(cidr string, outputchan chan string) {
+	if options.Range {
+		_, network, err := net.ParseCIDR(cidr)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		firstIP, lastIP, err := mapcidr.AddressRange(network)
+		if err != nil {
+			gologger.Fatal().Msgf("%s\n", err)
+		}
+		outputchan <- fmt.Sprintf("%s-%s", firstIP, lastIP)
+		return
+	}
 	if options.Slices > 0 {
 		subnets, err := mapcidr.SplitN(cidr, options.Slices)
 		if err != nil {
