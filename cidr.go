@@ -340,7 +340,12 @@ func IPToInteger(ip net.IP) (*big.Int, int, error) {
 func IntegerToIP(ipInt *big.Int, bits int) net.IP {
 	ipBytes := ipInt.Bytes()
 	ret := make([]byte, bits/8) //nolint
-	for i := 1; i <= len(ipBytes); i++ {
+	// copy the low-order bytes; ipInt >= 2^bits wraps (mod 2^bits) instead of panicking
+	n := len(ipBytes)
+	if n > len(ret) {
+		n = len(ret)
+	}
+	for i := 1; i <= n; i++ {
 		ret[len(ret)-i] = ipBytes[len(ipBytes)-i]
 	}
 	return net.IP(ret)

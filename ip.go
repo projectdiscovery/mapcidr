@@ -1134,6 +1134,13 @@ The intent here is to get the CIDR range from the IP range.
 This function will return the sorted list of CIDR ranges.
 */
 func GetCIDRFromIPRange(firstIP, lastIP net.IP) ([]*net.IPNet, error) {
+	// net.IP is 4- or 16-byte; normalise both to 16-byte so the range math below
+	// never depends on the input representation.
+	first16, last16 := firstIP.To16(), lastIP.To16()
+	if first16 == nil || last16 == nil {
+		return nil, fmt.Errorf("invalid IP address in range %s-%s", firstIP, lastIP)
+	}
+	firstIP, lastIP = first16, last16
 	// check if range is valid or not
 	if bytes.Compare(firstIP, lastIP) > 0 {
 		return nil, fmt.Errorf("start IP:%s must be less than End IP:%s", firstIP, lastIP)
