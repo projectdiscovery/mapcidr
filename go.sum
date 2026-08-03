@@ -65,8 +65,8 @@ github.com/fatih/color v1.15.0/go.mod h1:0h5ZqXfHYED7Bhv2ZJamyIOUej9KtShiJESRwBD
 github.com/fsnotify/fsnotify v1.4.7/go.mod h1:jwhsz4b93w/PPRr/qN1Yymfu8t87LnFCMoQvtojpjFo=
 github.com/fsnotify/fsnotify v1.6.0 h1:n+5WquG0fcWoWp6xPWfHdbskMCQaFnG6PfBrh1Ky4HY=
 github.com/fsnotify/fsnotify v1.6.0/go.mod h1:sl3t1tCWJFWoRz9R8WJCbQihKKwmorjAbSClcnxKAGw=
-github.com/gaissmai/bart v0.28.1 h1:1YhWqAcQaFklvhRd8x0FHA9qUCmArfqEwaORVkV2s6k=
-github.com/gaissmai/bart v0.28.1/go.mod h1:GREWQfTLRWz/c5FTOsIw+KkscuFkIV5t8Rp7Nd1Td5c=
+github.com/gaissmai/bart v0.29.0 h1:wO6HGE8g9YE0Wm0bCpYxwRzfQ4+fbJKOhL64e5ACGCI=
+github.com/gaissmai/bart v0.29.0/go.mod h1:GREWQfTLRWz/c5FTOsIw+KkscuFkIV5t8Rp7Nd1Td5c=
 github.com/go-ole/go-ole v1.2.6 h1:/Fpf6oFPoeFik9ty7siob0G6Ke8QvQEuVcuChpwXzpY=
 github.com/go-ole/go-ole v1.2.6/go.mod h1:pprOEPIfldk/42T2oK7lQ4v4JSDwmV0As9GaiUsvbm0=
 github.com/golang/protobuf v1.2.0/go.mod h1:6lQm79b+lXiMfvg/cZm0SGofjICqVBUtrP5yJMmIC1U=
@@ -183,8 +183,8 @@ github.com/projectdiscovery/ipranger v0.0.58 h1:y3rUb4Gp1gOXU0nx0fcqHX3khdjEXcB6
 github.com/projectdiscovery/ipranger v0.0.58/go.mod h1:12lcE8y565ox5FbaJj+8I+ZHKQg1SmtYsqQTBTtEt90=
 github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 h1:eR+0HE//Ciyfwy3HC7fjRyKShSJHYoX2Pv7pPshjK/Q=
 github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582/go.mod h1:3G3BRKui7nMuDFAZKR/M2hiOLtaOmyukT20g88qRQjI=
-github.com/projectdiscovery/networkpolicy v0.1.43 h1:USAkEEYilhsN7v917wtFBUf+k8i0LOwJMcdds4HYKMU=
-github.com/projectdiscovery/networkpolicy v0.1.43/go.mod h1:X2qj1V2rrahnWG8SntJBao3FG01eEpdNrIKnQfpzE70=
+github.com/projectdiscovery/networkpolicy v0.1.44 h1:+fnpYNQVH9mYZY7VrsTqdL4YJGVZSA8XLAlRHBMl5QE=
+github.com/projectdiscovery/networkpolicy v0.1.44/go.mod h1:q1KeQiHchXdElScEMWc5mShWNRNoJXI5koRnVaX6Qh8=
 github.com/projectdiscovery/retryabledns v1.0.115 h1:RKV63FNIznFHUoawg/1hs53pVH3wqPtFhwstCuxVSoA=
 github.com/projectdiscovery/retryabledns v1.0.115/go.mod h1:+fEMWoPigw+M0lGNKY7AZ+g8FIgj+4sONjsinMmeL3k=
 github.com/projectdiscovery/retryablehttp-go v1.3.21 h1:HytR9e8AfhIF/4xUo6szqg213a7pOq5tE3kpNZCyYwI=
