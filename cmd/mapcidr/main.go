@@ -663,10 +663,13 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 
 func outputItems(f *os.File, items ...string) {
 	for _, item := range items {
-		gologger.Silent().Msgf("%s\n", item)
+		// When -o/--output is set, write only to the file so stdout stays quiet
+		// (matching user expectation with -silent -o <file>). See #826.
 		if f != nil {
 			_, _ = f.WriteString(item + "\n")
+			continue
 		}
+		gologger.Silent().Msgf("%s\n", item)
 	}
 }
 

@@ -324,3 +324,18 @@ func TestProcess(t *testing.T) {
 
 	}
 }
+
+func TestOutputItemsSuppressesStdoutWhenFileSet(t *testing.T) {
+	// Regression for #826: -o should not also emit results on stdout.
+	path := t.TempDir() + "/out.txt"
+	f, err := os.Create(path)
+	require.NoError(t, err)
+	defer f.Close()
+
+	outputItems(f, "10.0.0.1", "10.0.0.2")
+	require.NoError(t, f.Close())
+
+	data, err := os.ReadFile(path)
+	require.NoError(t, err)
+	require.Equal(t, "10.0.0.1\n10.0.0.2\n", string(data))
+}
