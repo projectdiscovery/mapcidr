@@ -1,6 +1,8 @@
 package main
 
 import (
+	"os"
+	"strings"
 	"sync"
 	"testing"
 
@@ -323,4 +325,52 @@ func TestProcess(t *testing.T) {
 		})
 
 	}
+}
+
+func TestProcessCleansTempFiles(t *testing.T) {
+	tmpdir := os.TempDir()
+	countMapcidrDirs := func() int {
+		entries, err := os.ReadDir(tmpdir)
+		if err != nil {
+			t.Fatalf("readdir temp: %v", err)
+		}
+		n := 0
+		for _, e := range entries {
+			if e.IsDir() && strings.HasPrefix(e.Name(), "mapcidr") {
+				n++
+			}
+		}
+		return n
+	}
+
+	before := countMapcidrDirs()
+	options = &Options{
+		FileCidr:  []string{"10.40.0.0/30", "10.40.0.4/30"},
+		Aggregate: true,
+	}
+
+	chancidr := make(chan string)
+	outputchan := make(chan string)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go process(&wg, chancidr, outputchan)
+
+	var outputlist []string
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		for output := range outputchan {
+			outputlist = append(outputlist, output)
+		}
+	}()
+
+	for _, item := range options.FileCidr {
+		chancidr <- item
+	}
+	close(chancidr)
+	wg.Wait()
+
+	require.Equal(t, []string{"10.40.0.0/29"}, outputlist)
+	after := countMapcidrDirs()
+	require.Equal(t, before, after, "process should clean up mapcidr temp dirs created by ipranger/hmap")
 }
