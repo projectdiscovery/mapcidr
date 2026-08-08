@@ -386,7 +386,11 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		asnNumberList []string
 	)
 
-	ranger, _ = ipranger.New()
+	ranger, err = ipranger.New()
+	if err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
+	}
+	defer func() { _ = ranger.Close() }()
 	for cidr := range chancidr {
 		// if it's an ip turn it into a cidr
 		if ip := net.ParseIP(cidr); ip != nil {
