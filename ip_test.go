@@ -101,6 +101,82 @@ func TestRangeToCIDRs(t *testing.T) {
 	}
 }
 
+// cidrStrings runs GetCIDRFromIPRange and returns the CIDR list as strings.
+func cidrStrings(t *testing.T, first, last net.IP) []string {
+	t.Helper()
+	got, err := GetCIDRFromIPRange(first, last)
+	require.NoError(t, err)
+	var out []string
+	for _, n := range got {
+		out = append(out, n.String())
+	}
+	return out
+}
+
+// GetCIDRFromIPRange must accept any legitimate net.IP byte-length. Previously a
+// 4-byte (To4) or mixed-length pair panicked, and a mixed-length valid range was
+// wrongly rejected by the initial start>end check.
+func TestGetCIDRFromIPRangeByteLength(t *testing.T) {
+	first16 := net.ParseIP("10.0.0.1")
+	last16 := net.ParseIP("10.0.0.9")
+	want := cidrStrings(t, first16, last16)
+	require.Equal(t, []string{"10.0.0.1/32", "10.0.0.2/31", "10.0.0.4/30", "10.0.0.8/31"}, want)
+
+	cases := []struct {
+		name        string
+		first, last net.IP
+	}{
+		{"both4byte", first16.To4(), last16.To4()},
+		{"first16last4", first16, last16.To4()},
+		{"first4last16", first16.To4(), last16},
+		{"integerToIPOutput", intToIPHelper(t, "10.0.0.1"), intToIPHelper(t, "10.0.0.9")},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.Equal(t, want, cidrStrings(t, tc.first, tc.last))
+		})
+	}
+}
+
+func intToIPHelper(t *testing.T, s string) net.IP {
+	t.Helper()
+	i, bits, err := IPToInteger(net.ParseIP(s))
+	require.NoError(t, err)
+	return IntegerToIP(i, bits) // 4-byte form
+}
+
+// tiling parity: 4-byte, 16-byte and mixed inputs must yield identical, correct
+// CIDR sets (aligned, contiguous, non-overlapping, exact cover of [start,end]).
+func TestGetCIDRFromIPRangeTilingParity(t *testing.T) {
+	base := new(big.Int).SetBytes(net.ParseIP("172.16.0.0").To4())
+	for k := 0; k < 4000; k++ {
+		a := int64((k * 2654435761) % (1 << 20))
+		b := a + int64((k*40503)%(1<<12))
+		s4 := IntegerToIP(new(big.Int).Add(base, big.NewInt(a)), 32)
+		e4 := IntegerToIP(new(big.Int).Add(base, big.NewInt(b)), 32)
+		got16 := cidrStrings(t, s4.To16(), e4.To16())
+		require.Equal(t, got16, cidrStrings(t, s4, e4), "4-byte parity")
+		require.Equal(t, got16, cidrStrings(t, s4.To16(), e4), "mixed parity")
+		assertTiling(t, s4, e4, got16)
+	}
+}
+
+func assertTiling(t *testing.T, start, end net.IP, cidrs []string) {
+	t.Helper()
+	lo := new(big.Int).SetBytes(start.To4())
+	end4 := new(big.Int).SetBytes(end.To4())
+	for _, c := range cidrs {
+		_, n, err := net.ParseCIDR(c)
+		require.NoError(t, err)
+		ones, size := n.Mask.Size()
+		netLo := new(big.Int).SetBytes(n.IP.To4())
+		require.Equal(t, 0, lo.Cmp(netLo), "gap/overlap or misalignment at %s", c)
+		blk := new(big.Int).Lsh(big.NewInt(1), uint(size-ones))
+		lo = new(big.Int).Add(netLo, blk)
+	}
+	require.Equal(t, 0, lo.Cmp(new(big.Int).Add(end4, big.NewInt(1))), "range not covered exactly")
+}
+
 func TestFindSmallestIPRange(t *testing.T) {
 	// Input IP addresses
 	ips := []string{
