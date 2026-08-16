@@ -107,9 +107,13 @@ func (h *mapCidrQuery) Execute() error {
 }
 
 func (h *mapCidrQueryOutputFile) Execute() error {
-	_, err := RunMapCidrAndGetResults(h.question, debug, h.args)
+	stdout, err := RunMapCidrAndGetResults(h.question, debug, h.args)
 	if err != nil {
 		return err
+	}
+	// when an output file is specified, stdout must be suppressed
+	if len(stdout) > 0 {
+		return fmt.Errorf("stdout not suppressed when -o is used, got: %v", stdout)
 	}
 	// read output file and compare result
 	fileContent, err := os.ReadFile(h.outputfile)
