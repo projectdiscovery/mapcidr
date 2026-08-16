@@ -648,7 +648,18 @@ func output(outputchan chan string) error {
 		}
 		defer f.Close() //nolint
 	}
+	return writeOutput(f, outputchan)
+}
+
+// writeOutput drains outputchan until it closes, writing each item to f (nil
+// means stdout). The first write failure is recorded and returned, while the
+// channel keeps being drained so producers never block on a failed write.
+func writeOutput(f *os.File, outputchan chan string) error {
+	var firstErr error
 	for o := range outputchan {
+		if firstErr != nil {
+			continue
+		}
 		if o == "" {
 			continue
 		}
@@ -661,13 +672,13 @@ func output(outputchan chan string) error {
 
 		if len(options.IPFormats) > 0 {
 			if err := outputItems(f, mapcidr.AlterIP(o, options.IPFormats, options.ZeroPadNumberOfZeroes, options.ZeroPadPermute)...); err != nil {
-				return err
+				firstErr = err
 			}
 		} else if err := outputItems(f, o); err != nil {
-			return err
+			firstErr = err
 		}
 	}
-	return nil
+	return firstErr
 }
 
 func outputItems(f *os.File, items ...string) error {
