@@ -646,9 +646,14 @@ func output(outputchan chan string) error {
 		if err != nil {
 			gologger.Fatal().Msgf("Could not create output file '%s': %s\n", options.Output, err)
 		}
-		defer f.Close() //nolint
 	}
-	return writeOutput(f, outputchan)
+	writeErr := writeOutput(f, outputchan)
+	if f != nil {
+		if cerr := f.Close(); cerr != nil && writeErr == nil {
+			return cerr
+		}
+	}
+	return writeErr
 }
 
 // writeOutput drains outputchan until it closes, writing each item to f (nil
@@ -683,8 +688,6 @@ func writeOutput(f *os.File, outputchan chan string) error {
 
 func outputItems(f *os.File, items ...string) error {
 	for _, item := range items {
-		// when an output file is specified, results are written only to the file
-		// and stdout stays clean so it can be piped or used for other data
 		if f != nil {
 			if _, err := f.WriteString(item + "\n"); err != nil {
 				return err
