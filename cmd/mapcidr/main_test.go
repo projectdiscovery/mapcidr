@@ -1,11 +1,37 @@
 package main
 
 import (
+	"os"
 	"sync"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestOutputItemsWritesToFile(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "out-*")
+	require.NoError(t, err)
+	defer f.Close()
+
+	require.NoError(t, outputItems(f, "1.1.1.1", "1.1.1.2"))
+
+	data, err := os.ReadFile(f.Name())
+	require.NoError(t, err)
+	require.Equal(t, "1.1.1.1\n1.1.1.2\n", string(data))
+}
+
+func TestOutputItemsPropagatesWriteError(t *testing.T) {
+	// opening a directory yields a file whose writes always fail, which lets us
+	// exercise the error path without a full/failing filesystem
+	f, err := os.Open(t.TempDir())
+	if err != nil {
+		t.Skipf("cannot open directory as file: %v", err)
+	}
+	defer f.Close()
+
+	err = outputItems(f, "1.1.1.1")
+	require.Error(t, err)
+}
 
 func TestProcess(t *testing.T) {
 	tests := []struct {

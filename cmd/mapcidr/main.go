@@ -258,12 +258,16 @@ func main() {
 	options = ParseOptions()
 	chancidr := make(chan string)
 	outputchan := make(chan string)
+	outputErr := make(chan error, 1)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go process(&wg, chancidr, outputchan)
 	wg.Add(1)
-	go output(&wg, outputchan)
+	go func() {
+		defer wg.Done()
+		outputErr <- output(outputchan)
+	}()
 
 	if fileutil.HasStdin() {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -282,6 +286,10 @@ func main() {
 	}
 	close(chancidr)
 	wg.Wait()
+
+	if err := <-outputErr; err != nil {
+		gologger.Fatal().Msgf("could not write output: %s\n", err)
+	}
 }
 
 func filterIPsFromFlagList(channel chan string, ip string, ipFlagList []string) {
@@ -630,9 +638,7 @@ func commonFunc(cidr string, outputchan chan string) {
 	}
 }
 
-func output(wg *sync.WaitGroup, outputchan chan string) {
-	defer wg.Done()
-
+func output(outputchan chan string) error {
 	var f *os.File
 	if options.Output != "" {
 		var err error
@@ -654,23 +660,29 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		}
 
 		if len(options.IPFormats) > 0 {
-			outputItems(f, mapcidr.AlterIP(o, options.IPFormats, options.ZeroPadNumberOfZeroes, options.ZeroPadPermute)...)
-		} else {
-			outputItems(f, o)
+			if err := outputItems(f, mapcidr.AlterIP(o, options.IPFormats, options.ZeroPadNumberOfZeroes, options.ZeroPadPermute)...); err != nil {
+				return err
+			}
+		} else if err := outputItems(f, o); err != nil {
+			return err
 		}
 	}
+	return nil
 }
 
-func outputItems(f *os.File, items ...string) {
+func outputItems(f *os.File, items ...string) error {
 	for _, item := range items {
 		// when an output file is specified, results are written only to the file
 		// and stdout stays clean so it can be piped or used for other data
 		if f != nil {
-			_, _ = f.WriteString(item + "\n")
+			if _, err := f.WriteString(item + "\n"); err != nil {
+				return err
+			}
 		} else {
 			gologger.Silent().Msgf("%s\n", item)
 		}
 	}
+	return nil
 }
 
 // returns the list of expanded IPs of given CIDR list
