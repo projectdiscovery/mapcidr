@@ -183,8 +183,8 @@ github.com/projectdiscovery/ipranger v0.0.61 h1:z9CtmwNPXnr2PEqK9HTe0YnmzA3gXqqH
 github.com/projectdiscovery/ipranger v0.0.61/go.mod h1:G8jELhHrj6dDNQQGroD/ppNIThgLnGdMdYn9MRWdIGg=
 github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 h1:eR+0HE//Ciyfwy3HC7fjRyKShSJHYoX2Pv7pPshjK/Q=
 github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582/go.mod h1:3G3BRKui7nMuDFAZKR/M2hiOLtaOmyukT20g88qRQjI=
-github.com/projectdiscovery/networkpolicy v0.1.45 h1:Hg3j9XiMC2MAJs1r5ydIJzGVfPxGS++FAM6VdRPPOR0=
-github.com/projectdiscovery/networkpolicy v0.1.45/go.mod h1:q1KeQiHchXdElScEMWc5mShWNRNoJXI5koRnVaX6Qh8=
+github.com/projectdiscovery/networkpolicy v0.1.46 h1:lZblKcIQh8Kd0/JA5AxspxgjNz4ffs2NEf/KxMtXV1g=
+github.com/projectdiscovery/networkpolicy v0.1.46/go.mod h1:q1KeQiHchXdElScEMWc5mShWNRNoJXI5koRnVaX6Qh8=
 github.com/projectdiscovery/retryabledns v1.0.115 h1:RKV63FNIznFHUoawg/1hs53pVH3wqPtFhwstCuxVSoA=
 github.com/projectdiscovery/retryabledns v1.0.115/go.mod h1:+fEMWoPigw+M0lGNKY7AZ+g8FIgj+4sONjsinMmeL3k=
 github.com/projectdiscovery/retryablehttp-go v1.3.23 h1:s5gsGP7sWJvss1Xeb06Y5TRux8pXvA/xXPCWdPBHOQ8=
