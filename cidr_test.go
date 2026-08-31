@@ -28,6 +28,11 @@ func TestIntegerToIPOverflow(t *testing.T) {
 	if got := IntegerToIP(over, 32).String(); got != "10.0.0.1" {
 		t.Errorf("overflow 2^32+10.0.0.1 => %s, want 10.0.0.1", got)
 	}
+	// 1<<40 previously panicked: index out of range [-1]
+	shift40 := new(big.Int).Lsh(big.NewInt(1), 40)
+	if got := IntegerToIP(shift40, 32).String(); got != "0.0.0.0" {
+		t.Errorf("overflow 2^40 => %s, want 0.0.0.0", got)
+	}
 }
 
 func TestSplitIPNetIntoN(t *testing.T) {

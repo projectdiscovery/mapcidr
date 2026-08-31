@@ -119,8 +119,8 @@ func cidrStrings(t *testing.T, first, last net.IP) []string {
 func TestGetCIDRFromIPRangeByteLength(t *testing.T) {
 	first16 := net.ParseIP("10.0.0.1")
 	last16 := net.ParseIP("10.0.0.9")
-	want := cidrStrings(t, first16, last16)
-	require.Equal(t, []string{"10.0.0.1/32", "10.0.0.2/31", "10.0.0.4/30", "10.0.0.8/31"}, want)
+	want := []string{"10.0.0.1/32", "10.0.0.2/31", "10.0.0.4/30", "10.0.0.8/31"}
+	require.Equal(t, want, cidrStrings(t, first16, last16))
 
 	cases := []struct {
 		name        string
@@ -133,9 +133,16 @@ func TestGetCIDRFromIPRangeByteLength(t *testing.T) {
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
-			require.Equal(t, want, cidrStrings(t, tc.first, tc.last))
+			require.NotPanics(t, func() {
+				require.Equal(t, want, cidrStrings(t, tc.first, tc.last))
+			})
 		})
 	}
+}
+
+func TestGetCIDRFromIPRangeInvalidIP(t *testing.T) {
+	_, err := GetCIDRFromIPRange(net.IP{1, 2, 3}, net.ParseIP("10.0.0.9"))
+	require.Error(t, err)
 }
 
 func intToIPHelper(t *testing.T, s string) net.IP {
