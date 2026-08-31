@@ -12,7 +12,6 @@ require (
 	github.com/projectdiscovery/ipranger v0.0.62
 	github.com/projectdiscovery/utils v0.11.1
 	github.com/stretchr/testify v1.12.0
-	golang.org/x/exp v0.0.0-20260112195511-716be5621a96
 )
 
 require (
@@ -62,7 +61,7 @@ require (
 	github.com/muesli/reflow v0.3.0 // indirect
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
-	github.com/projectdiscovery/fastdialer v0.5.17 // indirect
+	github.com/projectdiscovery/fastdialer v0.5.18 // indirect
 	github.com/projectdiscovery/hmap v0.0.101 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.47 // indirect
@@ -94,6 +93,7 @@ require (
 	go.etcd.io/bbolt v1.3.7 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.52.0 // indirect
+	golang.org/x/exp v0.0.0-20260112195511-716be5621a96 // indirect
 	golang.org/x/mod v0.35.0 // indirect
 	golang.org/x/net v0.55.0 // indirect
 	golang.org/x/oauth2 v0.27.0 // indirect
