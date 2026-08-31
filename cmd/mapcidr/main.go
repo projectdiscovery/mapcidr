@@ -258,12 +258,16 @@ func main() {
 	options = ParseOptions()
 	chancidr := make(chan string)
 	outputchan := make(chan string)
+	outputErr := make(chan error, 1)
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go process(&wg, chancidr, outputchan)
 	wg.Add(1)
-	go output(&wg, outputchan)
+	go func() {
+		defer wg.Done()
+		outputErr <- output(outputchan)
+	}()
 
 	if fileutil.HasStdin() {
 		scanner := bufio.NewScanner(os.Stdin)
@@ -282,6 +286,10 @@ func main() {
 	}
 	close(chancidr)
 	wg.Wait()
+
+	if err := <-outputErr; err != nil {
+		gologger.Fatal().Msgf("could not write output: %s\n", err)
+	}
 }
 
 func filterIPsFromFlagList(channel chan string, ip string, ipFlagList []string) {
@@ -630,9 +638,7 @@ func commonFunc(cidr string, outputchan chan string) {
 	}
 }
 
-func output(wg *sync.WaitGroup, outputchan chan string) {
-	defer wg.Done()
-
+func output(outputchan chan string) error {
 	var f *os.File
 	if options.Output != "" {
 		var err error
@@ -640,9 +646,25 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		if err != nil {
 			gologger.Fatal().Msgf("Could not create output file '%s': %s\n", options.Output, err)
 		}
-		defer f.Close() //nolint
 	}
+	writeErr := writeOutput(f, outputchan)
+	if f != nil {
+		if cerr := f.Close(); cerr != nil && writeErr == nil {
+			return cerr
+		}
+	}
+	return writeErr
+}
+
+// writeOutput drains outputchan until it closes, writing each item to stdout
+// and to f when non-nil. The first write failure is recorded and returned,
+// while the channel keeps being drained so producers never block on a failed write.
+func writeOutput(f *os.File, outputchan chan string) error {
+	var firstErr error
 	for o := range outputchan {
+		if firstErr != nil {
+			continue
+		}
 		if o == "" {
 			continue
 		}
@@ -654,20 +676,26 @@ func output(wg *sync.WaitGroup, outputchan chan string) {
 		}
 
 		if len(options.IPFormats) > 0 {
-			outputItems(f, mapcidr.AlterIP(o, options.IPFormats, options.ZeroPadNumberOfZeroes, options.ZeroPadPermute)...)
-		} else {
-			outputItems(f, o)
+			if err := outputItems(f, mapcidr.AlterIP(o, options.IPFormats, options.ZeroPadNumberOfZeroes, options.ZeroPadPermute)...); err != nil {
+				firstErr = err
+			}
+		} else if err := outputItems(f, o); err != nil {
+			firstErr = err
 		}
 	}
+	return firstErr
 }
 
-func outputItems(f *os.File, items ...string) {
+func outputItems(f *os.File, items ...string) error {
 	for _, item := range items {
 		gologger.Silent().Msgf("%s\n", item)
 		if f != nil {
-			_, _ = f.WriteString(item + "\n")
+			if _, err := f.WriteString(item + "\n"); err != nil {
+				return err
+			}
 		}
 	}
+	return nil
 }
 
 // returns the list of expanded IPs of given CIDR list

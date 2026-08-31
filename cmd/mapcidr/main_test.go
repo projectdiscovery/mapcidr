@@ -1,11 +1,113 @@
 package main
 
 import (
+	"fmt"
+	"io"
+	"os"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/require"
 )
+
+func TestOutputItemsWritesToFile(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "out-*")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if cerr := f.Close(); cerr != nil {
+			t.Errorf("failed to close output file: %v", cerr)
+		}
+	})
+
+	require.NoError(t, outputItems(f, "1.1.1.1", "1.1.1.2"))
+
+	data, err := os.ReadFile(f.Name())
+	require.NoError(t, err)
+	require.Equal(t, "1.1.1.1\n1.1.1.2\n", string(data))
+}
+
+func TestOutputItemsWritesToStdoutAndFile(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "out-*")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if cerr := f.Close(); cerr != nil {
+			t.Errorf("failed to close output file: %v", cerr)
+		}
+	})
+
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	orig := os.Stdout
+	os.Stdout = w
+	t.Cleanup(func() { os.Stdout = orig })
+
+	require.NoError(t, outputItems(f, "1.1.1.1"))
+	require.NoError(t, w.Close())
+
+	stdout, err := io.ReadAll(r)
+	require.NoError(t, err)
+	require.Contains(t, string(stdout), "1.1.1.1")
+
+	data, err := os.ReadFile(f.Name())
+	require.NoError(t, err)
+	require.Equal(t, "1.1.1.1\n", string(data))
+}
+
+func TestOutputItemsPropagatesWriteError(t *testing.T) {
+	// opening a directory yields a file whose writes always fail, which lets us
+	// exercise the error path without a full/failing filesystem
+	f, err := os.Open(t.TempDir())
+	if err != nil {
+		t.Skipf("cannot open directory as file: %v", err)
+	}
+	t.Cleanup(func() {
+		if cerr := f.Close(); cerr != nil {
+			t.Errorf("failed to close directory handle: %v", cerr)
+		}
+	})
+
+	err = outputItems(f, "1.1.1.1")
+	require.Error(t, err)
+}
+
+func TestOutputDrainsChannelAfterWriteError(t *testing.T) {
+	// opening a directory yields a file whose writes always fail, so the first
+	// item fails to write while the channel must still be drained afterwards
+	f, err := os.Open(t.TempDir())
+	if err != nil {
+		t.Skipf("cannot open directory as file: %v", err)
+	}
+	t.Cleanup(func() {
+		if cerr := f.Close(); cerr != nil {
+			t.Errorf("failed to close directory handle: %v", cerr)
+		}
+	})
+
+	options = &Options{}
+
+	outputchan := make(chan string)
+	done := make(chan error, 1)
+	go func() { done <- writeOutput(f, outputchan) }()
+
+	// sending many items after the first write failure must never block:
+	// writeOutput keeps draining outputchan until it is closed
+	for i := 0; i < 100; i++ {
+		select {
+		case outputchan <- fmt.Sprintf("10.0.0.%d", i):
+		case <-time.After(5 * time.Second):
+			t.Fatal("output blocked while sending after a write failure - channel not drained")
+		}
+	}
+	close(outputchan)
+
+	select {
+	case err := <-done:
+		require.Error(t, err)
+	case <-time.After(5 * time.Second):
+		t.Fatal("output did not return after channel was closed")
+	}
+}
 
 func TestProcess(t *testing.T) {
 	tests := []struct {

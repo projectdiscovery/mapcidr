@@ -107,8 +107,12 @@ func (h *mapCidrQuery) Execute() error {
 }
 
 func (h *mapCidrQueryOutputFile) Execute() error {
-	_, err := RunMapCidrAndGetResults(h.question, debug, h.args)
+	stdout, err := RunMapCidrAndGetResults(h.question, debug, h.args)
 	if err != nil {
+		return err
+	}
+	// -o writes the file in addition to stdout, matching the rest of the PD CLI tools
+	if err := compareResult(h.expectedOutput, stdout); err != nil {
 		return err
 	}
 	// read output file and compare result
