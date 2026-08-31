@@ -4,8 +4,6 @@ import (
 	"fmt"
 	"os"
 	"strings"
-
-	"golang.org/x/exp/slices"
 )
 
 type TestCase interface {
@@ -142,7 +140,14 @@ func compareResult(expected, result []string) error {
 		return errIncorrectResultsCount(result)
 	}
 	for _, v := range result {
-		if !slices.Contains(expected, v) {
+		found := false
+		for _, e := range expected {
+			if e == v {
+				found = true
+				break
+			}
+		}
+		if !found {
 			return errIncorrectResult(expected, result)
 		}
 	}
