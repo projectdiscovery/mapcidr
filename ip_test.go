@@ -141,6 +141,7 @@ func TestGetCIDRFromIPRangeByteLength(t *testing.T) {
 }
 
 func TestGetCIDRFromIPRangeInvalidIP(t *testing.T) {
+	// To16() is nil for a 3-byte IP, so the range is rejected instead of panicking.
 	_, err := GetCIDRFromIPRange(net.IP{1, 2, 3}, net.ParseIP("10.0.0.9"))
 	require.Error(t, err)
 }
