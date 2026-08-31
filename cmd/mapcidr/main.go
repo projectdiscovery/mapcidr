@@ -656,9 +656,9 @@ func output(outputchan chan string) error {
 	return writeErr
 }
 
-// writeOutput drains outputchan until it closes, writing each item to f (nil
-// means stdout). The first write failure is recorded and returned, while the
-// channel keeps being drained so producers never block on a failed write.
+// writeOutput drains outputchan until it closes, writing each item to stdout
+// and to f when non-nil. The first write failure is recorded and returned,
+// while the channel keeps being drained so producers never block on a failed write.
 func writeOutput(f *os.File, outputchan chan string) error {
 	var firstErr error
 	for o := range outputchan {
@@ -688,12 +688,11 @@ func writeOutput(f *os.File, outputchan chan string) error {
 
 func outputItems(f *os.File, items ...string) error {
 	for _, item := range items {
+		gologger.Silent().Msgf("%s\n", item)
 		if f != nil {
 			if _, err := f.WriteString(item + "\n"); err != nil {
 				return err
 			}
-		} else {
-			gologger.Silent().Msgf("%s\n", item)
 		}
 	}
 	return nil

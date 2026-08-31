@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"os"
 	"sync"
 	"testing"
@@ -24,6 +25,33 @@ func TestOutputItemsWritesToFile(t *testing.T) {
 	data, err := os.ReadFile(f.Name())
 	require.NoError(t, err)
 	require.Equal(t, "1.1.1.1\n1.1.1.2\n", string(data))
+}
+
+func TestOutputItemsWritesToStdoutAndFile(t *testing.T) {
+	f, err := os.CreateTemp(t.TempDir(), "out-*")
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		if cerr := f.Close(); cerr != nil {
+			t.Errorf("failed to close output file: %v", cerr)
+		}
+	})
+
+	r, w, err := os.Pipe()
+	require.NoError(t, err)
+	orig := os.Stdout
+	os.Stdout = w
+	t.Cleanup(func() { os.Stdout = orig })
+
+	require.NoError(t, outputItems(f, "1.1.1.1"))
+	require.NoError(t, w.Close())
+
+	stdout, err := io.ReadAll(r)
+	require.NoError(t, err)
+	require.Contains(t, string(stdout), "1.1.1.1")
+
+	data, err := os.ReadFile(f.Name())
+	require.NoError(t, err)
+	require.Equal(t, "1.1.1.1\n", string(data))
 }
 
 func TestOutputItemsPropagatesWriteError(t *testing.T) {

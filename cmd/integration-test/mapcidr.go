@@ -111,9 +111,9 @@ func (h *mapCidrQueryOutputFile) Execute() error {
 	if err != nil {
 		return err
 	}
-	// when an output file is specified, stdout must be suppressed
-	if len(stdout) > 0 {
-		return fmt.Errorf("stdout not suppressed when -o is used, got: %v", stdout)
+	// -o writes the file in addition to stdout, matching the rest of the PD CLI tools
+	if err := compareResult(h.expectedOutput, stdout); err != nil {
+		return err
 	}
 	// read output file and compare result
 	fileContent, err := os.ReadFile(h.outputfile)
