@@ -1,10 +1,39 @@
 package mapcidr
 
 import (
+	"math/big"
 	"net"
 	"reflect"
 	"testing"
 )
+
+// IntegerToIP round-trips IPToInteger and, for ipInt >= 2^bits, wraps (mod 2^bits)
+// instead of panicking with a negative index.
+func TestIntegerToIPOverflow(t *testing.T) {
+	for _, s := range []string{"0.0.0.0", "10.0.0.1", "255.255.255.255", "192.168.1.1"} {
+		i, bits, err := IPToInteger(net.ParseIP(s))
+		if err != nil {
+			t.Fatalf("IPToInteger(%s): %v", s, err)
+		}
+		if got := IntegerToIP(i, bits).String(); got != s {
+			t.Errorf("round-trip %s => %s", s, got)
+		}
+	}
+	// 2^32 wraps to 0.0.0.0; 2^32 + 0x0a000001 wraps to 10.0.0.1.
+	over := new(big.Int).Lsh(big.NewInt(1), 32)
+	if got := IntegerToIP(over, 32).String(); got != "0.0.0.0" {
+		t.Errorf("overflow 2^32 => %s, want 0.0.0.0", got)
+	}
+	over.Add(over, big.NewInt(0x0a000001))
+	if got := IntegerToIP(over, 32).String(); got != "10.0.0.1" {
+		t.Errorf("overflow 2^32+10.0.0.1 => %s, want 10.0.0.1", got)
+	}
+	// 1<<40 previously panicked: index out of range [-1]
+	shift40 := new(big.Int).Lsh(big.NewInt(1), 40)
+	if got := IntegerToIP(shift40, 32).String(); got != "0.0.0.0" {
+		t.Errorf("overflow 2^40 => %s, want 0.0.0.0", got)
+	}
+}
 
 func TestSplitIPNetIntoN(t *testing.T) {
 	tests := []struct {
