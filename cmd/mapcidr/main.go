@@ -317,6 +317,28 @@ func cleanupTempDirs() {
 	}
 }
 
+// CreateOwnedTempDir creates a temporary directory under the system temp dir,
+// writes a .mapcidr-owner file containing the tempOwnerID, records it for
+// potential bookkeeping, and returns the directory path.
+func CreateOwnedTempDir(prefix string) (string, error) {
+	if tempOwnerID == "" {
+		// ensure owner is registered
+		registerTempOwner()
+	}
+	dir, err := os.MkdirTemp("", prefix+"mapcidr-")
+	if err != nil {
+		return "", err
+	}
+	ownerFile := filepath.Join(dir, ".mapcidr-owner")
+	if err := os.WriteFile(ownerFile, []byte(tempOwnerID), 0o600); err != nil {
+		// best-effort cleanup on write failure
+		_ = os.RemoveAll(dir)
+		return "", err
+	}
+	createdTempDirs = append(createdTempDirs, dir)
+	return dir, nil
+}
+
 func main() {
 	options = ParseOptions()
 	// register owner and ensure cleanup runs once on exit or signal

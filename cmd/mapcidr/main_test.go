@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
@@ -425,4 +426,38 @@ func TestProcess(t *testing.T) {
 		})
 
 	}
+}
+
+// Test that cleanupTempDirs only removes directories owned by this process.
+func TestCleanupTempDirsOnlyRemovesOwned(t *testing.T) {
+	// ensure owner is set
+	registerTempOwner()
+	// create owned temp dir
+	owned, err := CreateOwnedTempDir("")
+	if err != nil {
+		t.Fatalf("failed to create owned temp dir: %v", err)
+	}
+	// create an unowned temp dir
+	unowned, err := os.MkdirTemp("", "mapcidr-unowned-")
+	if err != nil {
+		t.Fatalf("failed to create unowned temp dir: %v", err)
+	}
+	// ensure unowned does NOT have owner file
+	_ = os.Remove(filepath.Join(unowned, ".mapcidr-owner"))
+
+	// run cleanup
+	cleanupTempDirs()
+
+	// owned should be removed
+	if _, err := os.Stat(owned); !os.IsNotExist(err) {
+		t.Fatalf("owned temp dir was not removed")
+	}
+	// unowned should still exist
+	if _, err := os.Stat(unowned); err != nil {
+		if os.IsNotExist(err) {
+			t.Fatalf("unowned temp dir was removed")
+		}
+	}
+	// cleanup unowned
+	_ = os.RemoveAll(unowned)
 }
