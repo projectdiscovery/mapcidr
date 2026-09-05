@@ -9,6 +9,8 @@ import (
 	"testing"
 	"time"
 
+	"github.com/projectdiscovery/ipranger"
+
 	"github.com/stretchr/testify/require"
 )
 
@@ -428,36 +430,56 @@ func TestProcess(t *testing.T) {
 	}
 }
 
-// Test that cleanupTempDirs only removes directories owned by this process.
-func TestCleanupTempDirsOnlyRemovesOwned(t *testing.T) {
-	// ensure owner is set
-	registerTempOwner()
-	// create owned temp dir
-	owned, err := CreateOwnedTempDir("")
-	if err != nil {
-		t.Fatalf("failed to create owned temp dir: %v", err)
-	}
-	// create an unowned temp dir
-	unowned, err := os.MkdirTemp("", "mapcidr-unowned-")
-	if err != nil {
-		t.Fatalf("failed to create unowned temp dir: %v", err)
-	}
-	// ensure unowned does NOT have owner file
-	_ = os.Remove(filepath.Join(unowned, ".mapcidr-owner"))
+func TestProcessRemovesIPRangerTempDir(t *testing.T) {
+	before := globTempDirs(t)
 
-	// run cleanup
-	cleanupTempDirs()
+	options = &Options{FileCidr: []string{"192.0.2.0/30"}, Aggregate: true}
+	chancidr := make(chan string)
+	outputchan := make(chan string)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go process(&wg, chancidr, outputchan)
+	go func() {
+		for range outputchan {
+		}
+	}()
+	chancidr <- "192.0.2.0/30"
+	close(chancidr)
+	wg.Wait()
 
-	// owned should be removed
-	if _, err := os.Stat(owned); !os.IsNotExist(err) {
-		t.Fatalf("owned temp dir was not removed")
-	}
-	// unowned should still exist
-	if _, err := os.Stat(unowned); err != nil {
-		if os.IsNotExist(err) {
-			t.Fatalf("unowned temp dir was removed")
+	after := globTempDirs(t)
+	for dir := range after {
+		if _, ok := before[dir]; !ok {
+			t.Fatalf("ipranger temp dir left behind: %s", dir)
 		}
 	}
-	// cleanup unowned
-	_ = os.RemoveAll(unowned)
+}
+
+func TestIPRangerCloseRemovesDiskStore(t *testing.T) {
+	before := globTempDirs(t)
+	ranger, err := ipranger.New()
+	require.NoError(t, err)
+	created := map[string]struct{}{}
+	for dir := range globTempDirs(t) {
+		if _, ok := before[dir]; !ok {
+			created[dir] = struct{}{}
+		}
+	}
+	require.NotEmpty(t, created, "ipranger.New should create a temp disk store")
+	require.NoError(t, ranger.Close())
+	for dir := range created {
+		_, err := os.Stat(dir)
+		require.True(t, os.IsNotExist(err), "closed ranger must remove %s", dir)
+	}
+}
+
+func globTempDirs(t *testing.T) map[string]struct{} {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(os.TempDir(), "mapcidr*"))
+	require.NoError(t, err)
+	out := make(map[string]struct{}, len(matches))
+	for _, m := range matches {
+		out[m] = struct{}{}
+	}
+	return out
 }

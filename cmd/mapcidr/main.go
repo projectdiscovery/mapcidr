@@ -7,13 +7,10 @@ import (
 	"fmt"
 	"net"
 	"os"
-	"os/signal"
-	"path/filepath"
 	"sort"
 	"strconv"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/projectdiscovery/goflags"
@@ -255,95 +252,10 @@ func (options *Options) configureOutput() {
 	}
 }
 
-var (
-	options *Options
-	// createdTempDirs stores directories created by this process
-	createdTempDirs []string
-	// tempOwnerID identifies ownership of created temp dirs
-	tempOwnerID string
-	// ensure cleanup runs only once
-	cleanupOnce sync.Once
-)
-
-// registerTempOwner sets an owner identifier and installs signal handlers so
-// cleanupTempDirs runs on SIGINT/SIGTERM. The owner identifier is the PID to
-// avoid adding extra dependencies; it is written into each temp directory's
-// .mapcidr-owner file by callers that create temp dirs.
-func registerTempOwner() {
-	tempOwnerID = strconv.Itoa(os.Getpid())
-	// handle signals to trigger cleanup
-	sigs := make(chan os.Signal, 1)
-	signal.Notify(sigs, syscall.SIGINT, syscall.SIGTERM)
-	go func() {
-		<-sigs
-		cleanupOnce.Do(cleanupTempDirs)
-		os.Exit(1)
-	}()
-}
-
-// cleanupTempDirs removes only directories under the system temp directory
-// that contain a .mapcidr-owner file matching this process's owner id. This
-// prevents accidental removal of directories created by other processes.
-func cleanupTempDirs() {
-	tmp := os.TempDir()
-	pattern := filepath.Join(tmp, "mapcidr*")
-	matches, err := filepath.Glob(pattern)
-	if err != nil {
-		return
-	}
-	for _, d := range matches {
-		// guard path
-		abs, err := filepath.Abs(d)
-		if err != nil {
-			continue
-		}
-		tmpAbs, err := filepath.Abs(tmp)
-		if err != nil {
-			continue
-		}
-		if !strings.HasPrefix(abs, tmpAbs) {
-			continue
-		}
-
-		ownerFile := filepath.Join(d, ".mapcidr-owner")
-		data, err := os.ReadFile(ownerFile)
-		if err != nil {
-			// no owner file, skip
-			continue
-		}
-		if string(data) == tempOwnerID {
-			_ = os.RemoveAll(abs)
-		}
-	}
-}
-
-// CreateOwnedTempDir creates a temporary directory under the system temp dir,
-// writes a .mapcidr-owner file containing the tempOwnerID, records it for
-// potential bookkeeping, and returns the directory path.
-func CreateOwnedTempDir(prefix string) (string, error) {
-	if tempOwnerID == "" {
-		// ensure owner is registered
-		registerTempOwner()
-	}
-	dir, err := os.MkdirTemp("", prefix+"mapcidr-")
-	if err != nil {
-		return "", err
-	}
-	ownerFile := filepath.Join(dir, ".mapcidr-owner")
-	if err := os.WriteFile(ownerFile, []byte(tempOwnerID), 0o600); err != nil {
-		// best-effort cleanup on write failure
-		_ = os.RemoveAll(dir)
-		return "", err
-	}
-	createdTempDirs = append(createdTempDirs, dir)
-	return dir, nil
-}
+var options *Options
 
 func main() {
 	options = ParseOptions()
-	// register owner and ensure cleanup runs once on exit or signal
-	registerTempOwner()
-	defer cleanupOnce.Do(cleanupTempDirs)
 	chancidr := make(chan string)
 	outputchan := make(chan string)
 	outputErr := make(chan error, 1)
@@ -482,7 +394,11 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		asnNumberList []string
 	)
 
-	ranger, _ = ipranger.New()
+	ranger, err = ipranger.New()
+	if err != nil {
+		gologger.Fatal().Msgf("%s\n", err)
+	}
+	defer func() { _ = ranger.Close() }()
 	for cidr := range chancidr {
 		// if it's an ip turn it into a cidr
 		if ip := net.ParseIP(cidr); ip != nil {
