@@ -4,9 +4,12 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"path/filepath"
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/projectdiscovery/ipranger"
 
 	"github.com/stretchr/testify/require"
 )
@@ -425,4 +428,70 @@ func TestProcess(t *testing.T) {
 		})
 
 	}
+}
+
+func TestProcessRemovesIPRangerTempDir(t *testing.T) {
+	foreign, err := os.MkdirTemp("", "mapcidr-foreign-")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(foreign) })
+
+	before := globTempDirs(t)
+
+	options = &Options{FileCidr: []string{"192.0.2.0/30"}, Aggregate: true}
+	chancidr := make(chan string)
+	outputchan := make(chan string)
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go process(&wg, chancidr, outputchan)
+	go func() {
+		for range outputchan {
+		}
+	}()
+	chancidr <- "192.0.2.0/30"
+	close(chancidr)
+	wg.Wait()
+
+	after := globTempDirs(t)
+	for dir := range after {
+		if _, ok := before[dir]; !ok {
+			t.Fatalf("ipranger temp dir left behind: %s", dir)
+		}
+	}
+	_, err = os.Stat(foreign)
+	require.NoError(t, err, "unrelated mapcidr* temp dir must not be removed")
+}
+
+func TestIPRangerCloseRemovesDiskStore(t *testing.T) {
+	foreign, err := os.MkdirTemp("", "mapcidr-foreign-")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(foreign) })
+
+	before := globTempDirs(t)
+	ranger, err := ipranger.New()
+	require.NoError(t, err)
+	created := map[string]struct{}{}
+	for dir := range globTempDirs(t) {
+		if _, ok := before[dir]; !ok {
+			created[dir] = struct{}{}
+		}
+	}
+	require.NotEmpty(t, created, "ipranger.New should create a temp disk store")
+	require.NoError(t, ranger.Close())
+	for dir := range created {
+		_, err := os.Stat(dir)
+		require.True(t, os.IsNotExist(err), "closed ranger must remove %s", dir)
+	}
+	_, err = os.Stat(foreign)
+	require.NoError(t, err, "unrelated mapcidr* temp dir must not be removed")
+}
+
+func globTempDirs(t *testing.T) map[string]struct{} {
+	t.Helper()
+	matches, err := filepath.Glob(filepath.Join(os.TempDir(), "mapcidr*"))
+	require.NoError(t, err)
+	out := make(map[string]struct{}, len(matches))
+	for _, m := range matches {
+		out[m] = struct{}{}
+	}
+	return out
 }
