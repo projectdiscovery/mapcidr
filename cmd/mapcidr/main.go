@@ -253,6 +253,14 @@ func (options *Options) configureOutput() {
 }
 
 var options *Options
+var rangerCloser func()
+
+func closeAndFatal(format string, args ...interface{}) {
+	if rangerCloser != nil {
+		rangerCloser()
+	}
+	gologger.Fatal().Msgf(format, args...)
+}
 
 func main() {
 	options = ParseOptions()
@@ -398,7 +406,16 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	if err != nil {
 		gologger.Fatal().Msgf("%s\n", err)
 	}
-	defer func() { _ = ranger.Close() }()
+	var closeOnce sync.Once
+	closeRanger := func() {
+		closeOnce.Do(func() { _ = ranger.Close() })
+	}
+	defer closeRanger()
+	rangerCloser = closeRanger
+	fatalf := func(format string, args ...interface{}) {
+		closeRanger()
+		gologger.Fatal().Msgf(format, args...)
+	}
 	for cidr := range chancidr {
 		// if it's an ip turn it into a cidr
 		if ip := net.ParseIP(cidr); ip != nil {
@@ -416,15 +433,15 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 		if len(options.FilterIP) > 0 && strings.Contains(cidr, "/") {
 			inputNetworks, err := cidrsToNetworks([]string{cidr})
 			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
+				fatalf("%s\n", err)
 			}
 			filterNetworks, err := cidrsToNetworks(options.FilterIP)
 			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
+				fatalf("%s\n", err)
 			}
 			newNetworks, err := mapcidr.RemoveCIDRs(inputNetworks, filterNetworks)
 			if err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
+				fatalf("%s\n", err)
 			}
 			cidrsToProcess = make([]string, 0, len(newNetworks))
 			for _, newNet := range newNetworks {
@@ -439,7 +456,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 				if strings.Count(cidr, ".") == 3 {
 					ips, err := mapcidr.ExpandIPPattern(cidr)
 					if err != nil {
-						gologger.Fatal().Msgf("%s\n", err)
+						fatalf("%s\n", err)
 					}
 
 					for _, ip := range ips {
@@ -460,7 +477,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 					ipRange = append(ipRange, net.ParseIP(ipstr))
 				}
 				if len(ipRange) > 2 {
-					gologger.Fatal().Msgf("IP range can not have more than 2 values.")
+					fatalf("IP range can not have more than 2 values.")
 				}
 				ipRangeList = append(ipRangeList, ipRange)
 				continue
@@ -474,7 +491,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 
 			// test if we have a cidr
 			if _, pCidr, err = net.ParseCIDR(cidr); err != nil {
-				gologger.Fatal().Msgf("%s\n", err)
+				fatalf("%s\n", err)
 			}
 
 			// filters ip4|ip6, by default do not filter
@@ -499,7 +516,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	for _, ipRange := range ipRangeList {
 		cidrs, err := mapcidr.GetCIDRFromIPRange(ipRange[0], ipRange[1])
 		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+			fatalf("%s\n", err)
 		}
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
 			allCidrs = append(allCidrs, cidrs...)
@@ -513,7 +530,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	for _, asnNumber := range asnNumberList {
 		cidrs, err := asn.GetCIDRsForASNNum(asnNumber)
 		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+			fatalf("%s\n", err)
 		}
 		if options.Aggregate || options.Shuffle || hasSort || options.AggregateApprox || options.Count {
 			allCidrs = append(allCidrs, cidrs...)
@@ -531,7 +548,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 			for _, p := range strings.Split(options.ShufflePorts, ",") {
 				port, err := strconv.Atoi(p)
 				if err != nil {
-					gologger.Fatal().Msgf("%s\n", err)
+					fatalf("%s\n", err)
 				}
 				ports = append(ports, port)
 			}
@@ -578,7 +595,7 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	if options.AggregateApprox {
 		ipnet, err := mapcidr.AggregateApproxIPv4To24(allCidrs)
 		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+			fatalf("%s\n", err)
 		}
 		for _, cidr := range ipnet {
 			outputchan <- cidr.String()
@@ -602,11 +619,11 @@ func commonFunc(cidr string, outputchan chan string) {
 	if options.Range {
 		_, network, err := net.ParseCIDR(cidr)
 		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+			closeAndFatal("%s\n", err)
 		}
 		firstIP, lastIP, err := mapcidr.AddressRange(network)
 		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+			closeAndFatal("%s\n", err)
 		}
 		outputchan <- fmt.Sprintf("%s-%s", firstIP, lastIP)
 		return
@@ -614,7 +631,7 @@ func commonFunc(cidr string, outputchan chan string) {
 	if options.Slices > 0 {
 		subnets, err := mapcidr.SplitN(cidr, options.Slices)
 		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+			closeAndFatal("%s\n", err)
 		}
 		for _, subnet := range subnets {
 			outputchan <- subnet.String()
@@ -622,7 +639,7 @@ func commonFunc(cidr string, outputchan chan string) {
 	} else if options.HostCount > 0 {
 		subnets, err := mapcidr.SplitByNumber(cidr, options.HostCount)
 		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+			closeAndFatal("%s\n", err)
 		}
 		for _, subnet := range subnets {
 			outputchan <- subnet.String()
@@ -634,7 +651,7 @@ func commonFunc(cidr string, outputchan chan string) {
 
 		ips, err := mapcidr.IPAddressesAsStream(cidr)
 		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+			closeAndFatal("%s\n", err)
 		}
 		for ip := range ips {
 			filterIPsFromFlagList(outputchan, ip, ipFlagList)
@@ -708,7 +725,7 @@ func getIPList(cidrs []*net.IPNet) []net.IP {
 	for _, cidr := range cidrs {
 		ips, err := mapcidr.IPAddressesAsStream(cidr.String())
 		if err != nil {
-			gologger.Fatal().Msgf("%s\n", err)
+			closeAndFatal("%s\n", err)
 		}
 		for ip := range ips {
 			ipList = append(ipList, net.ParseIP(ip))

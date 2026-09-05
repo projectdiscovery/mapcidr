@@ -431,6 +431,10 @@ func TestProcess(t *testing.T) {
 }
 
 func TestProcessRemovesIPRangerTempDir(t *testing.T) {
+	foreign, err := os.MkdirTemp("", "mapcidr-foreign-")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(foreign) })
+
 	before := globTempDirs(t)
 
 	options = &Options{FileCidr: []string{"192.0.2.0/30"}, Aggregate: true}
@@ -453,6 +457,8 @@ func TestProcessRemovesIPRangerTempDir(t *testing.T) {
 			t.Fatalf("ipranger temp dir left behind: %s", dir)
 		}
 	}
+	_, err = os.Stat(foreign)
+	require.NoError(t, err, "unrelated mapcidr* temp dir must not be removed")
 }
 
 func TestIPRangerCloseRemovesDiskStore(t *testing.T) {
