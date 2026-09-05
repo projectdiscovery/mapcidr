@@ -408,7 +408,11 @@ func process(wg *sync.WaitGroup, chancidr, outputchan chan string) {
 	}
 	var closeOnce sync.Once
 	closeRanger := func() {
-		closeOnce.Do(func() { _ = ranger.Close() })
+		closeOnce.Do(func() {
+			if err := ranger.Close(); err != nil {
+				gologger.Error().Msgf("%s\n", err)
+			}
+		})
 	}
 	defer closeRanger()
 	rangerCloser = closeRanger

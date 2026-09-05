@@ -462,6 +462,10 @@ func TestProcessRemovesIPRangerTempDir(t *testing.T) {
 }
 
 func TestIPRangerCloseRemovesDiskStore(t *testing.T) {
+	foreign, err := os.MkdirTemp("", "mapcidr-foreign-")
+	require.NoError(t, err)
+	t.Cleanup(func() { _ = os.RemoveAll(foreign) })
+
 	before := globTempDirs(t)
 	ranger, err := ipranger.New()
 	require.NoError(t, err)
@@ -477,6 +481,8 @@ func TestIPRangerCloseRemovesDiskStore(t *testing.T) {
 		_, err := os.Stat(dir)
 		require.True(t, os.IsNotExist(err), "closed ranger must remove %s", dir)
 	}
+	_, err = os.Stat(foreign)
+	require.NoError(t, err, "unrelated mapcidr* temp dir must not be removed")
 }
 
 func globTempDirs(t *testing.T) map[string]struct{} {
