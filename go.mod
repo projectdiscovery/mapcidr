@@ -62,11 +62,11 @@ require (
 	github.com/muesli/termenv v0.15.3-0.20240618155329-98d742f6907a // indirect
 	github.com/power-devops/perfstat v0.0.0-20240221224432-82ca36839d55 // indirect
 	github.com/projectdiscovery/fastdialer v0.5.18 // indirect
-	github.com/projectdiscovery/hmap v0.0.101 // indirect
+	github.com/projectdiscovery/hmap v0.0.102 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 // indirect
 	github.com/projectdiscovery/networkpolicy v0.1.48 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.116 // indirect
-	github.com/projectdiscovery/retryablehttp-go v1.3.24 // indirect
+	github.com/projectdiscovery/retryablehttp-go v1.3.25 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d // indirect
