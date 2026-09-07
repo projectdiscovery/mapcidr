@@ -109,8 +109,8 @@ github.com/klauspost/compress v1.18.2 h1:iiPHWW0YrcFgpBYhsA6D1+fqHssJscY/Tm/y2Uq
 github.com/klauspost/compress v1.18.2/go.mod h1:R0h/fSBs8DE4ENlcrlib3PsXS61voFxhIs2DeRhCvJ4=
 github.com/konsorten/go-windows-terminal-sequences v1.0.1/go.mod h1:T0+1ngSBFLxvqU3pZ+m/2kptfBszLMUkC4ZK/EgS/cQ=
 github.com/kr/pretty v0.1.0/go.mod h1:dAy3ld7l9f0ibDNOQOHHMYYIIbhfbHSm3C4ZsoJORNo=
-github.com/kr/pretty v0.3.1 h1:flRD4NNwYAUpkphVc1HcthR4KEIFJ65n8Mw5qdRn3LE=
-github.com/kr/pretty v0.3.1/go.mod h1:hoEshYVHaxMs3cyo3Yncou5ZscifuDolrwPKZanG3xk=
+github.com/kr/pretty v0.2.1 h1:Fmg33tUaq4/8ym9TJN1x7sLJnHVwhP33CNkpYV/7rwI=
+github.com/kr/pretty v0.2.1/go.mod h1:ipq/a2n7PKx3OHsz4KJII5eveXtPO4qwEXGdVfWzfnI=
 github.com/kr/pty v1.1.1/go.mod h1:pFQYn66WHrOpPYNljwOMqo10TkYh1fy3cYio2l3bCsQ=
 github.com/kr/text v0.1.0 h1:45sCR5RtlFHMR4UwH9sdQ5TC8v0qDQCHnXt+kaKSTVE=
 github.com/kr/text v0.1.0/go.mod h1:4Jbv+DJW3UT/LiOwJeYQe1efqtUx/iVham/4vfdArNI=
@@ -174,8 +174,8 @@ github.com/projectdiscovery/gologger v1.1.72 h1:PKk+aSx3jYOCBPi+FD+nTnhe+Vxx9u3K
 github.com/projectdiscovery/gologger v1.1.72/go.mod h1:mJwODZcFDg70ihINpOvZevmBtgvpP8H9/l8Y+OPhZPY=
 github.com/projectdiscovery/hmap v0.0.102 h1:ybPuf7UQvuOLiHLOUbVMvd+PSlItQU5iQpP1Erl8kaU=
 github.com/projectdiscovery/hmap v0.0.102/go.mod h1:IZ92wXFmxYpdn0euZ7VFmypzOBNDwq8c3yRyIIol6XE=
-github.com/projectdiscovery/ipranger v0.0.63 h1:THu16VdFdu3wG4NyI55D+HwE1UppzthScyUGkfipSnM=
-github.com/projectdiscovery/ipranger v0.0.63/go.mod h1:kAKZmMCB1q8Ryw1kntTDvcBSFY4oZwUezgGWARDSEmo=
+github.com/projectdiscovery/ipranger v0.0.64 h1:rZVfc9BeFttsPBTr/0Ny9cqRm5CKa2rDDSG95DuDj0I=
+github.com/projectdiscovery/ipranger v0.0.64/go.mod h1:8fL2lNyNmbPqJMUozHrvtefhVKkZVhTGQM8sSPqfBQM=
 github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 h1:eR+0HE//Ciyfwy3HC7fjRyKShSJHYoX2Pv7pPshjK/Q=
 github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582/go.mod h1:3G3BRKui7nMuDFAZKR/M2hiOLtaOmyukT20g88qRQjI=
 github.com/projectdiscovery/networkpolicy v0.1.49 h1:4F2lIy/iZUfLltpAwudXF/93CCICipr+pBshz5Ozts4=
@@ -192,8 +192,6 @@ github.com/rivo/uniseg v0.1.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJ
 github.com/rivo/uniseg v0.2.0/go.mod h1:J6wj4VEh+S6ZtnVlnTBMWIodfgj8LQOQFoIToxlJtxc=
 github.com/rivo/uniseg v0.4.7 h1:WUdvkW8uEhrYfLC4ZzdpI2ztxP1I582+49Oc5Mq64VQ=
 github.com/rivo/uniseg v0.4.7/go.mod h1:FN3SvrM+Zdj16jyLfmOkMNblXMcoc8DfTHruCPUcx88=
-github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjRBZyWFQ=
-github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d h1:hrujxIzL1woJ7AwssoOcM/tq5JjjG2yYOc8odClEiXA=
 github.com/saintfish/chardet v0.0.0-20230101081208-5e3ef4b5456d/go.mod h1:uugorj2VCxiV1x+LzaIdVa9b4S4qGAcH6cbhh4qVxOU=
 github.com/shirou/gopsutil/v4 v4.26.3 h1:2ESdQt90yU3oXF/CdOlRCJxrP+Am1aBYubTMTfxJ1qc=
