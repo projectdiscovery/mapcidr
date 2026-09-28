@@ -1,6 +1,6 @@
 module github.com/projectdiscovery/mapcidr
 
-go 1.25.0
+go 1.26.0
 
 require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
@@ -10,7 +10,7 @@ require (
 	github.com/projectdiscovery/goflags v0.2.1
 	github.com/projectdiscovery/gologger v1.1.73
 	github.com/projectdiscovery/ipranger v0.0.66
-	github.com/projectdiscovery/utils v0.11.5
+	github.com/projectdiscovery/utils v0.11.6
 	github.com/stretchr/testify v1.12.1
 )
 
@@ -40,8 +40,8 @@ require (
 	github.com/gaissmai/bart v0.29.1 // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
 	github.com/golang/snappy v0.0.4 // indirect
-	github.com/google/go-github/v30 v30.1.0 // indirect
-	github.com/google/go-querystring v1.1.0 // indirect
+	github.com/google/go-github/v92 v92.0.0 // indirect
+	github.com/google/go-querystring v1.2.0 // indirect
 	github.com/google/shlex v0.0.0-20191202100458-e7afc7fbc510 // indirect
 	github.com/google/uuid v1.3.1 // indirect
 	github.com/gorilla/css v1.0.1 // indirect
