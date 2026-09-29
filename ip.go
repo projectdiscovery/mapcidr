@@ -580,6 +580,27 @@ func FindMinCIDR(ipNets []*net.IPNet) (*net.IPNet, error) {
 	// Find the minimum and maximum IP addresses
 	minIP := ipNets[0].IP
 	maxIP := ipNets[0].IP
+	if len(minIP) == net.IPv4len {
+		// Unsigned integer order matches byte order for four-byte addresses.
+		// Keep the extrema when a mixed representation needs byte comparisons.
+		minValue := binary.BigEndian.Uint32(minIP)
+		maxValue := minValue
+		i := 1
+		for ; i < len(ipNets); i++ {
+			ip := ipNets[i].IP
+			if len(ip) != net.IPv4len {
+				break
+			}
+			value := binary.BigEndian.Uint32(ip)
+			if value < minValue {
+				minValue, minIP = value, ip
+			}
+			if value > maxValue {
+				maxValue, maxIP = value, ip
+			}
+		}
+		ipNets = ipNets[i:]
+	}
 	for _, ipNet := range ipNets {
 		if bytes.Compare(ipNet.IP, minIP) < 0 {
 			minIP = ipNet.IP
