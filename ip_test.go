@@ -1,7 +1,12 @@
 package mapcidr
 
 import (
+	"bytes"
+	"encoding/binary"
+	"fmt"
 	"math/big"
+	"math/bits"
+	"math/rand"
 	"net"
 	"testing"
 
@@ -249,4 +254,124 @@ func TestRemoveCIDRsReservedIPv4(t *testing.T) {
 	newAllows, removeErr := RemoveCIDRs([]*net.IPNet{allowCIDR}, removeNetworks)
 	require.NoError(t, removeErr)
 	require.NotEmpty(t, newAllows)
+}
+
+func TestFindMinCIDRIPv4(t *testing.T) {
+	rng := rand.New(rand.NewSource(42))
+	for _, n := range []int{1, 2, 7, 8, 15, 16, 17, 31, 32, 33, 63, 64, 65, 127, 128, 129, 4096} {
+		for _, prefix := range []int{0, 1, 8, 16, 24, 31, 32} {
+			t.Run(fmt.Sprintf("n=%d/prefix=%d", n, prefix), func(t *testing.T) {
+				mask := ^uint32(0) << (32 - prefix)
+				base := rng.Uint32() & mask
+				networks := make([]*net.IPNet, n)
+				before := make([][]byte, n)
+				var differingBits uint32
+				var first uint32
+				for i := range networks {
+					value := base | rng.Uint32() & ^mask
+					if i == 0 {
+						first = value
+					}
+					differingBits |= first ^ value
+					ip := make(net.IP, net.IPv4len)
+					binary.BigEndian.PutUint32(ip, value)
+					// FindMinCIDR uses addresses, independently of input masks.
+					networks[i] = &net.IPNet{IP: ip, Mask: net.CIDRMask(i%33, 32)}
+					before[i] = bytes.Clone(ip)
+				}
+				wantMask := net.CIDRMask(bits.LeadingZeros32(differingBits), 32)
+				wantIP := networks[0].IP.Mask(wantMask)
+				got, err := FindMinCIDR(networks)
+				if err != nil {
+					t.Fatal(err)
+				}
+				if len(got.IP) != len(wantIP) || !got.IP.Equal(wantIP) || !bytes.Equal(got.Mask, wantMask) {
+					t.Fatalf("got %v, want %v", got, &net.IPNet{IP: wantIP, Mask: wantMask})
+				}
+				for i := range networks {
+					if !bytes.Equal(networks[i].IP, before[i]) {
+						t.Fatalf("input address %d changed", i)
+					}
+				}
+			})
+		}
+	}
+}
+
+func TestFindMinCIDRRepresentations(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		ips  []net.IP
+		want string
+	}{
+		{"IPv6", []net.IP{net.ParseIP("2001:db8::1"), net.ParseIP("2001:db8::ff")}, "2001:db8::/120"},
+		{"mapped", []net.IP{net.ParseIP("192.0.2.1"), net.ParseIP("192.0.2.255")}, "192.0.2.0/24"},
+		{"nil", []net.IP{nil}, "<nil>"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			networks := make([]*net.IPNet, 129)
+			for i := range networks {
+				networks[i] = &net.IPNet{IP: tc.ips[i%len(tc.ips)]}
+			}
+			got, err := FindMinCIDR(networks)
+			if err != nil || got.String() != tc.want {
+				t.Fatalf("got %v, %v; want %s", got, err, tc.want)
+			}
+		})
+	}
+	if got, err := FindMinCIDR(nil); got != nil || err == nil || err.Error() != "empty IP list" {
+		t.Fatalf("empty input: got %v, %v", got, err)
+	}
+}
+
+func TestFindMinCIDRMixedRepresentations(t *testing.T) {
+	for _, position := range []int{0, 31, 128} {
+		for _, tc := range []struct {
+			name    string
+			middle  net.IP
+			minimum net.IP
+			maximum net.IP
+			other   net.IP
+			want    string
+		}{
+			{"IPv6", net.IP{10, 128, 0, 1}, net.IP{10, 0, 0, 0}, net.IP{10, 255, 255, 255}, net.ParseIP("a80::1"), "10.0.0.0/8"},
+			{"mapped", net.IP{0, 0, 0, 128}, net.IP{0, 0, 0, 0}, net.IP{0, 0, 0, 255}, net.ParseIP("192.0.2.1"), "0.0.0.0/24"},
+			{"nil", net.IP{10, 128, 0, 1}, net.IP{10, 0, 0, 0}, net.IP{10, 255, 255, 255}, nil, "<nil>"},
+		} {
+			t.Run(fmt.Sprintf("%s/position=%d", tc.name, position), func(t *testing.T) {
+				networks := make([]*net.IPNet, 129)
+				for i := range networks {
+					networks[i] = &net.IPNet{IP: bytes.Clone(tc.middle)}
+				}
+				// Preserve extrema found before switching representations, including
+				// the existing byte ordering of mixed IPv4 and IPv6 inputs.
+				networks[1].IP = tc.minimum
+				networks[2].IP = tc.maximum
+				networks[position].IP = tc.other
+				got, err := FindMinCIDR(networks)
+				if err != nil || got.String() != tc.want {
+					t.Fatalf("got %v, %v; want %s", got, err, tc.want)
+				}
+			})
+		}
+	}
+}
+
+func TestFindMinCIDRResultOwnership(t *testing.T) {
+	networks := []*net.IPNet{
+		{IP: net.IP{192, 0, 2, 1}, Mask: net.CIDRMask(32, 32)},
+		{IP: net.IP{192, 0, 2, 255}, Mask: net.CIDRMask(32, 32)},
+	}
+	result, err := FindMinCIDR(networks)
+	if err != nil {
+		t.Fatal(err)
+	}
+	result.IP[0] = 0
+	result.Mask[0] = 0
+	if got := networks[0].String(); got != "192.0.2.1/32" {
+		t.Fatalf("first input changed through result: %s", got)
+	}
+	if got := networks[1].String(); got != "192.0.2.255/32" {
+		t.Fatalf("second input changed through result: %s", got)
+	}
 }
