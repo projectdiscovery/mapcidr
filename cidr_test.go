@@ -145,3 +145,25 @@ func TestSplitIPNetIntoN(t *testing.T) {
 		})
 	}
 }
+
+func TestSplitIPNetByNumberInvalidCount(t *testing.T) {
+	tests := []struct {
+		name    string
+		iprange string
+		number  int
+	}{
+		{name: "zero hosts per subnet", iprange: "192.168.0.0/16", number: 0},
+		{name: "negative hosts per subnet", iprange: "192.168.0.0/16", number: -1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			gotNets, err := SplitByNumber(tt.iprange, tt.number)
+			if err == nil {
+				t.Errorf("SplitByNumber() error = nil, want an error; got %v", gotNets)
+			}
+			if gotNets != nil {
+				t.Errorf("SplitByNumber() = %v, want nil", gotNets)
+			}
+		})
+	}
+}
