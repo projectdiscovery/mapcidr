@@ -1,4 +1,4 @@
-FROM alpine:3.18.3
+FROM alpine:latest
 
 LABEL org.opencontainers.image.authors="ProjectDiscovery"
 LABEL org.opencontainers.image.description="A utility program to perform multiple operations for a given subnet/CIDR range."
