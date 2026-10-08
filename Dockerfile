@@ -1,15 +1,15 @@
-# Base
-FROM golang:1.24.0-alpine AS builder
-RUN apk add --no-cache build-base
-WORKDIR /app
-COPY . /app
-RUN go mod download
-RUN go build ./cmd/mapcidr
+FROM alpine:latest
 
-# Release
-FROM alpine:3.18.3
+LABEL org.opencontainers.image.authors="ProjectDiscovery"
+LABEL org.opencontainers.image.description="A utility program to perform multiple operations for a given subnet/CIDR range."
+LABEL org.opencontainers.image.licenses="MIT"
+LABEL org.opencontainers.image.title="mapcidr"
+LABEL org.opencontainers.image.url="https://github.com/projectdiscovery/mapcidr"
+
 RUN apk -U upgrade --no-cache \
     && apk add --no-cache bind-tools ca-certificates
-COPY --from=builder /app/mapcidr /usr/local/bin/
+
+ARG TARGETPLATFORM
+COPY $TARGETPLATFORM/mapcidr /usr/local/bin/
 
 ENTRYPOINT ["mapcidr"]
