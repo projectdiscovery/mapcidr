@@ -68,6 +68,10 @@ func SplitByNumber(iprange string, number int) ([]*net.IPNet, error) {
 // SplitIPNetByNumber splits an IPNet into subnets with the closest n
 // umber of hosts per subnet.
 func SplitIPNetByNumber(ipnet *net.IPNet, number int) ([]*net.IPNet, error) {
+	if number <= 0 {
+		return nil, fmt.Errorf("hosts per subnet must be positive, got %d", number)
+	}
+
 	ipsNumber := AddressCountIpnet(ipnet)
 
 	// truncate result to nearest uint64
