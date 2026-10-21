@@ -257,7 +257,7 @@ To represent given IP into multiple formats, the `-if 0` flag can be used to dis
 $ echo 127.0.1.0 | mapcidr -if 0 -silent
 
 127.0.1.0
-127.1
+127.0.1.0
 0177.0.01.0
 0x7f.0x0.0x1.0x0
 0x7f000100
