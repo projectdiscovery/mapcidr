@@ -30,6 +30,16 @@ func TestIpEncodings(t *testing.T) {
 	require.Equal(t, []string{"127.0.0.1"}, res)
 	res = AlterIP(ip, []string{"2"}, 0, false)
 	require.Equal(t, []string{"127.1"}, res)
+	for _, tc := range []struct{ input, want string }{
+		{"10.0.0.1", "10.1"},
+		{"192.168.0.10", "192.168.10"},
+		{"192.168.10.1", "192.168.10.1"},
+		{"1.2.3.0", "1.2.3.0"},
+		{"127.0.1.0", "127.0.1.0"},
+	} {
+		res = AlterIP(tc.input, []string{"2"}, 0, false)
+		require.Equal(t, []string{tc.want}, res, tc.input)
+	}
 	res = AlterIP(ip, []string{"3"}, 0, false)
 	require.Equal(t, []string{"0177.0.0.01"}, res)
 	res = AlterIP(ip, []string{"4"}, 0, false)

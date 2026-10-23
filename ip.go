@@ -12,7 +12,6 @@ import (
 	"math/bits"
 	"net"
 	"net/netip"
-	"regexp"
 	"sort"
 	"strconv"
 	"strings"
@@ -1044,15 +1043,7 @@ func AlterIP(ip string, formats []string, zeroPadN int, zeroPadPermutation bool)
 		case "2":
 			// 0-optimized dotted-decimal notation
 			// the 0 value segments of an IP address can be ommitted (eg. 127.0.0.1 => 127.1)
-			// regex for zeroes with dot 0000.
-			var reZeroesWithDot = regexp.MustCompile(`(?m)[0]+\.`)
-			// regex for .0000
-			var reDotWithZeroes = regexp.MustCompile(`(?m)\.[0^]+$`)
-			// suppress 0000.
-			alteredIP := reZeroesWithDot.ReplaceAllString(standardIP.String(), "")
-			// suppress .0000
-			alteredIP = reDotWithZeroes.ReplaceAllString(alteredIP, "")
-			alteredIPs = append(alteredIPs, alteredIP)
+			alteredIPs = append(alteredIPs, zeroOptimizedIP(standardIP))
 		case "3":
 			// Octal notation (leading zeroes are required):
 			// eg: 127.0.0.1 => 0177.0.0.01
@@ -1126,6 +1117,20 @@ func AlterIP(ip string, formats []string, zeroPadN int, zeroPadPermutation bool)
 	}
 
 	return alteredIPs
+}
+
+// zeroOptimizedIP omits the zero octets that precede the last octet.
+// The last part of a shortened address fills the remaining bytes, so only
+// a.0.0.d => a.d and a.b.0.d => a.b.d resolve back to the same address.
+func zeroOptimizedIP(ip net.IP) string {
+	ip4 := ip.To4()
+	if ip4 == nil || ip4[2] != 0 {
+		return ip.String()
+	}
+	if ip4[1] == 0 {
+		return fmt.Sprintf("%d.%d", ip4[0], ip4[3])
+	}
+	return fmt.Sprintf("%d.%d.%d", ip4[0], ip4[1], ip4[3])
 }
 
 // overflowLastOctect squeeze together the last two octects into one
