@@ -6,11 +6,11 @@ require (
 	github.com/logrusorgru/aurora v2.0.3+incompatible
 	github.com/pkg/errors v0.9.1
 	github.com/projectdiscovery/asnmap v1.2.0
-	github.com/projectdiscovery/blackrock v0.0.2
+	github.com/projectdiscovery/blackrock v0.0.4
 	github.com/projectdiscovery/goflags v0.2.1
 	github.com/projectdiscovery/gologger v1.1.76
 	github.com/projectdiscovery/ipranger v0.0.73
-	github.com/projectdiscovery/utils v0.11.13
+	github.com/projectdiscovery/utils v0.11.15
 	github.com/stretchr/testify v1.12.1
 )
 
@@ -63,7 +63,7 @@ require (
 	github.com/projectdiscovery/fastdialer v0.6.3 // indirect
 	github.com/projectdiscovery/hmap v0.0.105 // indirect
 	github.com/projectdiscovery/machineid v0.0.0-20250715113114-c77eb3567582 // indirect
-	github.com/projectdiscovery/networkpolicy v0.1.58 // indirect
+	github.com/projectdiscovery/networkpolicy v0.1.59 // indirect
 	github.com/projectdiscovery/retryabledns v1.0.119 // indirect
 	github.com/projectdiscovery/retryablehttp-go v1.3.35 // indirect
 	github.com/refraction-networking/utls v1.8.2 // indirect
