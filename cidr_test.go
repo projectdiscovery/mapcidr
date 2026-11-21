@@ -167,3 +167,123 @@ func TestSplitIPNetByNumberInvalidCount(t *testing.T) {
 		})
 	}
 }
+
+// assertPartitionsInput verifies that got is a disjoint partition of want with
+// exactly n subnets and no unset entries.
+func assertPartitionsInput(t *testing.T, got []*net.IPNet, want *net.IPNet, n int) {
+	t.Helper()
+
+	if len(got) != n {
+		t.Fatalf("got %d subnets, want %d", len(got), n)
+	}
+
+	var total uint64
+	seen := make(map[string]struct{}, len(got))
+	for _, subnet := range got {
+		if subnet == nil || subnet.Mask == nil || subnet.IP == nil {
+			t.Fatalf("got an unset subnet: %v", subnet)
+		}
+		if _, ok := seen[subnet.String()]; ok {
+			t.Fatalf("duplicate subnet %s", subnet)
+		}
+		seen[subnet.String()] = struct{}{}
+		total += AddressCountIpnet(subnet)
+	}
+
+	if wantTotal := AddressCountIpnet(want); total != wantTotal {
+		t.Fatalf("subnets cover %d addresses, want %d", total, wantTotal)
+	}
+}
+
+func TestSplitIPNetIntoNPartitionsTheInput(t *testing.T) {
+	tests := []struct {
+		name    string
+		iprange string
+		n       int
+	}{
+		{name: "host count reaches the end of the range", iprange: "10.3.0.0/24", n: 85},
+		{name: "more subnets than a power of two", iprange: "10.4.0.0/24", n: 200},
+		{name: "every address split apart", iprange: "10.5.0.0/24", n: 256},
+		{name: "small range", iprange: "10.6.0.0/29", n: 5},
+		{name: "IPv6 range", iprange: "2001:db8::/120", n: 200},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, ipnet, err := net.ParseCIDR(tt.iprange)
+			if err != nil {
+				t.Fatalf("Failed to parse CIDR %s: %v", tt.iprange, err)
+			}
+
+			got, err := SplitIPNetIntoN(ipnet, tt.n)
+			if err != nil {
+				t.Fatalf("SplitIPNetIntoN() unexpected error: %v", err)
+			}
+
+			assertPartitionsInput(t, got, ipnet, tt.n)
+		})
+	}
+}
+
+func TestSplitIPNetIntoNNeverReturnsUnsetSubnets(t *testing.T) {
+	for _, iprange := range []string{"10.7.0.0/25", "10.7.0.0/28", "10.7.0.0/31"} {
+		_, ipnet, err := net.ParseCIDR(iprange)
+		if err != nil {
+			t.Fatalf("Failed to parse CIDR %s: %v", iprange, err)
+		}
+
+		for n := 2; n <= 32; n++ {
+			got, err := SplitIPNetIntoN(ipnet, n)
+			if err != nil {
+				continue
+			}
+			for _, subnet := range got {
+				if subnet == nil || subnet.Mask == nil || subnet.IP == nil {
+					t.Fatalf("SplitIPNetIntoN(%s, %d) returned an unset subnet", iprange, n)
+				}
+			}
+		}
+	}
+}
+
+func TestSplitByNumberPartitionsTheInput(t *testing.T) {
+	tests := []struct {
+		name    string
+		iprange string
+		number  int
+		want    int
+	}{
+		{name: "host count is not a power of two", iprange: "10.3.0.0/24", number: 3, want: 85},
+		{name: "host count above the range size", iprange: "10.3.0.0/24", number: 1000, want: 1},
+		{name: "power of two host count", iprange: "10.3.0.0/24", number: 16, want: 16},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, ipnet, err := net.ParseCIDR(tt.iprange)
+			if err != nil {
+				t.Fatalf("Failed to parse CIDR %s: %v", tt.iprange, err)
+			}
+
+			got, err := SplitByNumber(tt.iprange, tt.number)
+			if err != nil {
+				t.Fatalf("SplitByNumber() unexpected error: %v", err)
+			}
+
+			assertPartitionsInput(t, got, ipnet, tt.want)
+		})
+	}
+}
+
+func TestDivideIPNetRejectsSingleAddress(t *testing.T) {
+	_, ipnet, err := net.ParseCIDR("10.8.0.1/32")
+	if err != nil {
+		t.Fatalf("Failed to parse CIDR: %v", err)
+	}
+
+	got, err := divideIPNet(ipnet)
+	if err == nil {
+		t.Fatalf("divideIPNet() error = nil, want an error; got %v", got)
+	}
+	if got != nil {
+		t.Fatalf("divideIPNet() = %v, want nil", got)
+	}
+}
