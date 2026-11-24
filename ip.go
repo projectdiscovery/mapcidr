@@ -365,14 +365,12 @@ func createSpanningCIDR(r netWithRange) net.IPNet {
 	highest := *r.Last
 
 	var isIPv4 bool
-	var spanningMaskSize, bitLen, byteLen int
+	var spanningMaskSize, bitLen int
 	if lowest.To4() != nil {
 		isIPv4 = true
 		bitLen = ipv4BitLen
-		byteLen = net.IPv4len
 	} else {
 		bitLen = ipv6BitLen
-		byteLen = net.IPv6len
 	}
 
 	if isIPv4 {
@@ -403,12 +401,8 @@ func createSpanningCIDR(r netWithRange) net.IPNet {
 	if isIPv4 {
 		highest = append(ipv4LeadingZeroes, highestBig.Bytes()...) //nolint
 	} else {
-		highest = highestBig.Bytes()
-	}
-
-	// Int does not store leading zeroes.
-	if len(highest) == 0 {
-		highest = make([]byte, byteLen)
+		// Int does not store leading zeroes.
+		highest = highestBig.FillBytes(make([]byte, net.IPv6len))
 	}
 
 	newNet := net.IPNet{IP: highest, Mask: net.CIDRMask(spanningMaskSize, bitLen)}

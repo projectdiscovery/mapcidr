@@ -385,3 +385,33 @@ func TestFindMinCIDRResultOwnership(t *testing.T) {
 		t.Fatalf("second input changed through result: %s", got)
 	}
 }
+
+func TestGetCIDRFromIPRangeLeadingZeroIPv6(t *testing.T) {
+	cases := []struct {
+		first, last string
+		want        []string
+	}{
+		{"64:ff9b::", "64:ff9b::ffff:ffff", []string{"64:ff9b::/96"}},
+		{"64:ff9b::1", "64:ff9b::6", []string{"64:ff9b::1/128", "64:ff9b::2/127", "64:ff9b::4/127", "64:ff9b::6/128"}},
+		{"1::", "1::ff", []string{"1::/120"}},
+		{"::1:0", "::1:ff", []string{"::1:0/120"}},
+	}
+	for _, tc := range cases {
+		t.Run(tc.first+"-"+tc.last, func(t *testing.T) {
+			require.Equal(t, tc.want, cidrStrings(t, net.ParseIP(tc.first), net.ParseIP(tc.last)))
+		})
+	}
+}
+
+func TestCoalesceCIDRsLeadingZeroIPv6(t *testing.T) {
+	var networks []*net.IPNet
+	for _, cidr := range []string{"64:ff9b::/97", "64:ff9b::8000:0/97"} {
+		_, network, err := net.ParseCIDR(cidr)
+		require.NoError(t, err)
+		networks = append(networks, network)
+	}
+	v4, v6 := CoalesceCIDRs(networks)
+	require.Empty(t, v4)
+	require.Len(t, v6, 1)
+	require.Equal(t, "64:ff9b::/96", v6[0].String())
+}
