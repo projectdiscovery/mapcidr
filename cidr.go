@@ -123,51 +123,26 @@ func SplitIPNetIntoN(iprange *net.IPNet, n int) ([]*net.IPNet, error) {
 	if err != nil {
 		return nil, err
 	}
-	for len(subnets) < n {
-		// The last subnet cannot always be divided: once it has been reduced to
-		// a /31 or /32 (or /127 and /128) there is nothing left to split, and
-		// asking for a smaller mask used to produce an address-less IPNet that
-		// was handed to the caller and printed as "<nil>". Divide the last
-		// subnet that can still be halved instead, which keeps the result a
-		// disjoint partition of the input.
-		index := lastDivisibleSubnet(subnets)
-		if index < 0 {
-			return nil, fmt.Errorf("cannot split %s into %d subnets: the address space cannot be divided any further", iprange, n)
-		}
-
-		divided, err := divideIPNet(subnets[index])
+	// splitIPNet returned closestMinorPowerOfTwo equal subnets, so halving the
+	// last n-closestMinorPowerOfTwo of them once reaches n in a single pass.
+	// n is below twice the power of two and availableBits >= requiredBits, so
+	// every one of them still holds more than a single address.
+	extra := n - len(subnets)
+	if extra < 0 || extra > len(subnets) {
+		return nil, fmt.Errorf("cannot split %s into %d subnets", iprange, n)
+	}
+	keep := len(subnets) - extra
+	result := make([]*net.IPNet, 0, n)
+	result = append(result, subnets[:keep]...)
+	for _, subnet := range subnets[keep:] {
+		divided, err := divideIPNet(subnet)
 		if err != nil {
-			return nil, fmt.Errorf("cannot divide subnet %s further to reach %d splits: %w", subnets[index], n, err)
+			return nil, fmt.Errorf("cannot divide subnet %s further to reach %d splits: %w", subnet, n, err)
 		}
-
-		// Replace the divided subnet with its two halves, growing the slice by one.
-		subnets = append(subnets, nil)
-		copy(subnets[index+2:], subnets[index+1:])
-		subnets[index] = divided[0]
-		subnets[index+1] = divided[1]
+		result = append(result, divided...)
 	}
 
-	return subnets, nil
-}
-
-// lastDivisibleSubnet returns the index of the last subnet that still has room
-// to be split in two, or -1 when every subnet holds a single address.
-func lastDivisibleSubnet(subnets []*net.IPNet) int {
-	for i := len(subnets) - 1; i >= 0; i-- {
-		if canDivideIPNet(subnets[i]) {
-			return i
-		}
-	}
-	return -1
-}
-
-// canDivideIPNet reports whether an IPNet holds more than a single address.
-func canDivideIPNet(ipnet *net.IPNet) bool {
-	if ipnet == nil || ipnet.Mask == nil {
-		return false
-	}
-	prefixLen, bits := ipnet.Mask.Size()
-	return prefixLen < bits
+	return result, nil
 }
 
 // divideIPNet divides an IPNet into two IPNet structures.

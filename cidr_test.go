@@ -1,9 +1,11 @@
 package mapcidr
 
 import (
+	"bytes"
 	"math/big"
 	"net"
 	"reflect"
+	"sort"
 	"testing"
 )
 
@@ -178,20 +180,32 @@ func assertPartitionsInput(t *testing.T, got []*net.IPNet, want *net.IPNet, n in
 	}
 
 	var total uint64
-	seen := make(map[string]struct{}, len(got))
+	wantOnes, _ := want.Mask.Size()
+	sorted := make([]*net.IPNet, 0, len(got))
 	for _, subnet := range got {
 		if subnet == nil || subnet.Mask == nil || subnet.IP == nil {
 			t.Fatalf("got an unset subnet: %v", subnet)
 		}
-		if _, ok := seen[subnet.String()]; ok {
-			t.Fatalf("duplicate subnet %s", subnet)
+		if ones, _ := subnet.Mask.Size(); ones < wantOnes || !want.Contains(subnet.IP) {
+			t.Fatalf("subnet %s is not contained in %s", subnet, want)
 		}
-		seen[subnet.String()] = struct{}{}
 		total += AddressCountIpnet(subnet)
+		sorted = append(sorted, subnet)
 	}
 
 	if wantTotal := AddressCountIpnet(want); total != wantTotal {
 		t.Fatalf("subnets cover %d addresses, want %d", total, wantTotal)
+	}
+
+	// aligned CIDR blocks either nest or are disjoint, so after sorting by
+	// address any overlap shows up between neighbours
+	sort.Slice(sorted, func(i, j int) bool {
+		return bytes.Compare(sorted[i].IP.To16(), sorted[j].IP.To16()) < 0
+	})
+	for i := 1; i < len(sorted); i++ {
+		if sorted[i-1].Contains(sorted[i].IP) || sorted[i].Contains(sorted[i-1].IP) {
+			t.Fatalf("subnets %s and %s overlap", sorted[i-1], sorted[i])
+		}
 	}
 }
 
@@ -286,4 +300,19 @@ func TestDivideIPNetRejectsSingleAddress(t *testing.T) {
 	if got != nil {
 		t.Fatalf("divideIPNet() = %v, want nil", got)
 	}
+}
+
+// a large non power of two count must stay linear: shifting the slice for every
+// extra subnet made this quadratic.
+func TestSplitIPNetIntoNLargeCount(t *testing.T) {
+	_, ipnet, err := net.ParseCIDR("2001:db8::/32")
+	if err != nil {
+		t.Fatal(err)
+	}
+	const n = 200_000
+	got, err := SplitIPNetIntoN(ipnet, n)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assertPartitionsInput(t, got, ipnet, n)
 }
