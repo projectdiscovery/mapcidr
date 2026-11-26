@@ -123,26 +123,61 @@ func SplitIPNetIntoN(iprange *net.IPNet, n int) ([]*net.IPNet, error) {
 	if err != nil {
 		return nil, err
 	}
-	// splitIPNet returned closestMinorPowerOfTwo equal subnets, so halving the
-	// last n-closestMinorPowerOfTwo of them once reaches n in a single pass.
-	// n is below twice the power of two and availableBits >= requiredBits, so
-	// every one of them still holds more than a single address.
-	extra := n - len(subnets)
-	if extra < 0 || extra > len(subnets) {
-		return nil, fmt.Errorf("cannot split %s into %d subnets", iprange, n)
+	// splitIPNet returned closestMinorPowerOfTwo equal subnets. The extra
+	// subnets come from the last one, halved repeatedly (/27 -> /28 /29 /29),
+	// which is the layout this function has always produced. A subnet that is
+	// too small to give as many pieces passes the remainder to the one before
+	// it, so no subnet is ever divided below a single address.
+	pieces := make([]int, len(subnets))
+	for i := range pieces {
+		pieces[i] = 1
 	}
-	keep := len(subnets) - extra
+	extra := n - len(subnets)
+	for i := len(subnets) - 1; i >= 0 && extra > 0; i-- {
+		pieces[i] = min(extra+1, ipNetCapacity(subnets[i]))
+		extra -= pieces[i] - 1
+	}
+	if extra > 0 {
+		return nil, fmt.Errorf("cannot split %s into %d subnets: the address space cannot be divided any further", iprange, n)
+	}
+
 	result := make([]*net.IPNet, 0, n)
-	result = append(result, subnets[:keep]...)
-	for _, subnet := range subnets[keep:] {
-		divided, err := divideIPNet(subnet)
+	for i, subnet := range subnets {
+		result, err = appendSplitLast(result, subnet, pieces[i])
 		if err != nil {
 			return nil, fmt.Errorf("cannot divide subnet %s further to reach %d splits: %w", subnet, n, err)
 		}
-		result = append(result, divided...)
 	}
-
 	return result, nil
+}
+
+// ipNetCapacity returns how many single addresses ipnet holds, capped to what
+// an int can count.
+func ipNetCapacity(ipnet *net.IPNet) int {
+	ones, bits := ipnet.Mask.Size()
+	if hostBits := bits - ones; hostBits < 62 {
+		return 1 << hostBits
+	}
+	return math.MaxInt
+}
+
+// appendSplitLast appends ipnet divided into k subnets: the first half stays
+// whole and the second half is divided further, so the last subnet is the one
+// that keeps getting halved. A second half too small for its share leaves the
+// remainder to the first half.
+func appendSplitLast(out []*net.IPNet, ipnet *net.IPNet, k int) ([]*net.IPNet, error) {
+	if k <= 1 {
+		return append(out, ipnet), nil
+	}
+	halves, err := divideIPNet(ipnet)
+	if err != nil {
+		return nil, err
+	}
+	second := min(k-1, ipNetCapacity(halves[1]))
+	if out, err = appendSplitLast(out, halves[0], k-second); err != nil {
+		return nil, err
+	}
+	return appendSplitLast(out, halves[1], second)
 }
 
 // divideIPNet divides an IPNet into two IPNet structures.
